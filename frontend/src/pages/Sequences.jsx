@@ -1,50 +1,59 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { api } from '../api.js';
+import Layout from '../components/Layout.jsx';
+import { I } from '../components/Icons.jsx';
 
 export default function Sequences() {
   const [rows, setRows] = useState([]);
   const load = () => api.listSequences().then((r) => setRows(r.rows || [])).catch(() => {});
   useEffect(() => { load(); const i = setInterval(load, 5000); return () => clearInterval(i); }, []);
 
+  const actions = (
+    <Link to="/sequences/new" className="btn-primary">
+      <I.Plus /> New sequence
+    </Link>
+  );
+
   return (
-    <div className="space-y-4">
-      <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold">Follow-up sequences</h1>
-        <Link to="/sequences/new" className="btn-primary">New sequence</Link>
-      </div>
-      <div className="card overflow-x-auto p-0">
-        <table className="min-w-full divide-y divide-slate-200 dark:divide-slate-800">
-          <thead className="bg-slate-50 dark:bg-slate-800/50">
-            <tr>
-              <th className="th px-3 py-2">Name</th>
-              <th className="th px-3 py-2">Steps</th>
-              <th className="th px-3 py-2">Active enrolled</th>
-              <th className="th px-3 py-2">Status</th>
-              <th className="th px-3 py-2"></th>
+    <Layout breadcrumb={['Outreach', 'Sequences']} title="Follow-up sequences" actions={actions}>
+      <div className="card-flat overflow-x-auto p-0">
+        <table className="min-w-full">
+          <thead>
+            <tr className="border-b border-charcoal-800">
+              <th className="th">Name</th>
+              <th className="th">Steps</th>
+              <th className="th">Active enrolled</th>
+              <th className="th">Status</th>
+              <th className="th"></th>
             </tr>
           </thead>
-          <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
+          <tbody>
             {rows.map((s) => (
-              <tr key={s.id}>
-                <td className="td px-3 py-2 font-medium">
-                  <Link className="text-brand-600 hover:underline" to={`/sequences/${s.id}`}>{s.name}</Link>
+              <tr key={s.id} className="border-b border-charcoal-800/60 hover:bg-charcoal-850/60">
+                <td className="td font-medium">
+                  <Link className="text-brand-400 hover:text-brand-300 hover:underline" to={`/sequences/${s.id}`}>{s.name}</Link>
                 </td>
-                <td className="td px-3 py-2">{s.step_count}</td>
-                <td className="td px-3 py-2">{s.active_enrolled}</td>
-                <td className="td px-3 py-2">
-                  <span className={`chip ${s.active ? 'tag-green' : 'tag-gray'}`}>{s.active ? 'active' : 'paused'}</span>
+                <td className="td text-charcoal-300">{s.step_count}</td>
+                <td className="td text-charcoal-300">{s.active_enrolled}</td>
+                <td className="td">
+                  <span className={`chip ${s.active ? 'chip-green' : 'chip-gray'}`}>{s.active ? 'active' : 'paused'}</span>
                 </td>
-                <td className="td px-3 py-2 text-right">
+                <td className="td text-right">
                   {s.active && <button className="btn-ghost" onClick={() => api.stopSequence(s.id).then(load)}>Stop</button>}
-                  <button className="btn-ghost" onClick={() => { if (confirm('Delete?')) api.deleteSequence(s.id).then(load); }}>Delete</button>
+                  <button className="btn-ghost text-red-400" onClick={() => { if (confirm('Delete?')) api.deleteSequence(s.id).then(load); }}>Delete</button>
                 </td>
               </tr>
             ))}
-            {!rows.length && <tr><td className="td p-6 text-center text-slate-500" colSpan={5}>No sequences yet.</td></tr>}
+            {!rows.length && (
+              <tr><td className="td p-12 text-center text-charcoal-400" colSpan={5}>
+                <I.Repeat className="mx-auto mb-3 opacity-50" width={32} height={32} />
+                No sequences yet.
+              </td></tr>
+            )}
           </tbody>
         </table>
       </div>
-    </div>
+    </Layout>
   );
 }

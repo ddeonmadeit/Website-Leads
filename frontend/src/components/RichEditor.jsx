@@ -19,7 +19,6 @@ export default function RichEditor({ value, onChange, placeholder = 'Write your 
     onUpdate: ({ editor: ed }) => onChange(ed.getHTML()),
   });
 
-  // Keep external `value` in sync (e.g. when loading a campaign)
   useEffect(() => {
     if (!editor) return;
     if (value !== editor.getHTML()) editor.commands.setContent(value || '', false);
@@ -31,7 +30,7 @@ export default function RichEditor({ value, onChange, placeholder = 'Write your 
   const Btn = ({ active, onClick, children, title }) => (
     <button type="button" title={title}
       onClick={onClick}
-      className={`btn-ghost px-2 py-1 text-xs ${active ? 'bg-slate-200 dark:bg-slate-700' : ''}`}>
+      className={`px-2 py-1 text-xs rounded text-charcoal-300 hover:bg-charcoal-800 hover:text-charcoal-100 transition-colors ${active ? 'bg-charcoal-800 text-brand-400' : ''}`}>
       {children}
     </button>
   );
@@ -49,24 +48,24 @@ export default function RichEditor({ value, onChange, placeholder = 'Write your 
   };
 
   return (
-    <div className="rounded-md border border-slate-300 dark:border-slate-700 overflow-hidden">
-      <div className="flex flex-wrap gap-1 p-2 border-b border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900/50">
+    <div className="rounded-lg border border-charcoal-700 overflow-hidden bg-charcoal-850">
+      <div className="flex flex-wrap gap-1 p-2 border-b border-charcoal-800 bg-charcoal-875">
         <Btn title="Bold" active={editor.isActive('bold')} onClick={() => editor.chain().focus().toggleBold().run()}><b>B</b></Btn>
         <Btn title="Italic" active={editor.isActive('italic')} onClick={() => editor.chain().focus().toggleItalic().run()}><i>I</i></Btn>
         <Btn title="Strike" active={editor.isActive('strike')} onClick={() => editor.chain().focus().toggleStrike().run()}>S</Btn>
-        <span className="w-px bg-slate-300 dark:bg-slate-700 mx-1" />
+        <span className="w-px bg-charcoal-700 mx-1" />
         <Btn title="H1" active={editor.isActive('heading', { level: 1 })} onClick={() => editor.chain().focus().toggleHeading({ level: 1 }).run()}>H1</Btn>
         <Btn title="H2" active={editor.isActive('heading', { level: 2 })} onClick={() => editor.chain().focus().toggleHeading({ level: 2 }).run()}>H2</Btn>
         <Btn title="H3" active={editor.isActive('heading', { level: 3 })} onClick={() => editor.chain().focus().toggleHeading({ level: 3 }).run()}>H3</Btn>
-        <span className="w-px bg-slate-300 dark:bg-slate-700 mx-1" />
+        <span className="w-px bg-charcoal-700 mx-1" />
         <Btn title="Bullets" active={editor.isActive('bulletList')} onClick={() => editor.chain().focus().toggleBulletList().run()}>•</Btn>
         <Btn title="Numbers" active={editor.isActive('orderedList')} onClick={() => editor.chain().focus().toggleOrderedList().run()}>1.</Btn>
         <Btn title="Quote" onClick={() => editor.chain().focus().toggleBlockquote().run()}>“”</Btn>
-        <span className="w-px bg-slate-300 dark:bg-slate-700 mx-1" />
-        <Btn title="Link" onClick={setLink}>🔗</Btn>
-        <Btn title="Image (URL)" onClick={insertImage}>🖼</Btn>
-        <span className="w-px bg-slate-300 dark:bg-slate-700 mx-1" />
-        <span className="text-xs text-slate-500 self-center mr-1">Merge:</span>
+        <span className="w-px bg-charcoal-700 mx-1" />
+        <Btn title="Link" onClick={setLink}>Link</Btn>
+        <Btn title="Image (URL)" onClick={insertImage}>Image</Btn>
+        <span className="w-px bg-charcoal-700 mx-1" />
+        <span className="text-xs text-charcoal-500 self-center mr-1">Merge:</span>
         {MERGE_TAGS.map((t) => (
           <Btn key={t} onClick={() => insertTag(t)}>{t}</Btn>
         ))}
@@ -75,12 +74,12 @@ export default function RichEditor({ value, onChange, placeholder = 'Write your 
       </div>
       {showHtml ? (
         <textarea
-          className="w-full min-h-[280px] p-3 font-mono text-xs bg-white dark:bg-slate-900 outline-none"
+          className="w-full min-h-[280px] p-3 font-mono text-xs bg-charcoal-850 text-charcoal-100 outline-none border-0"
           value={value || ''}
           onChange={(e) => onChange(e.target.value)}
         />
       ) : (
-        <EditorContent editor={editor} className="bg-white dark:bg-slate-900" />
+        <EditorContent editor={editor} />
       )}
     </div>
   );

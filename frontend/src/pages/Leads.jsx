@@ -1,6 +1,8 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { api } from '../api.js';
 import { Link } from 'react-router-dom';
+import { api } from '../api.js';
+import Layout from '../components/Layout.jsx';
+import { I } from '../components/Icons.jsx';
 
 const COUNTRIES = ['Philippines', 'India', 'South Africa', 'UAE'];
 const WEBSITE_STATUSES = ['none', 'broken', 'social_only', 'ok'];
@@ -8,15 +10,15 @@ const EMAIL_STATUSES = ['not_sent', 'sent', 'opened', 'bounced', 'unsubscribed']
 
 function StatusBadge({ status }) {
   const map = {
-    not_sent: 'tag-gray', sent: 'tag-blue', opened: 'tag-green',
-    bounced: 'tag-red', unsubscribed: 'tag-yellow',
+    not_sent: 'chip-gray', sent: 'chip-blue', opened: 'chip-green',
+    bounced: 'chip-red', unsubscribed: 'chip-yellow',
   };
-  return <span className={`chip ${map[status] || 'tag-gray'}`}>{status || '—'}</span>;
+  return <span className={`chip ${map[status] || 'chip-gray'}`}>{status || '—'}</span>;
 }
 
 function WebsiteBadge({ status }) {
-  const map = { none: 'tag-red', broken: 'tag-red', social_only: 'tag-yellow', ok: 'tag-green' };
-  return <span className={`chip ${map[status] || 'tag-gray'}`}>{status || '—'}</span>;
+  const map = { none: 'chip-red', broken: 'chip-red', social_only: 'chip-yellow', ok: 'chip-green' };
+  return <span className={`chip ${map[status] || 'chip-gray'}`}>{status || '—'}</span>;
 }
 
 export default function Leads() {
@@ -26,6 +28,7 @@ export default function Leads() {
     include_duplicates: 'false',
     date_from: '', date_to: '',
   });
+  const [showFilters, setShowFilters] = useState(false);
   const [page, setPage] = useState(0);
   const [pageSize] = useState(50);
   const [data, setData] = useState({ rows: [], total: 0 });
@@ -91,120 +94,138 @@ export default function Leads() {
     }
   };
 
+  const actions = (
+    <>
+      <button className="btn-secondary" onClick={() => setShowFilters((v) => !v)}>
+        <I.Filter /> Filter
+      </button>
+      <a className="btn-secondary" href={api.exportUrl(params)} download>
+        <I.Download /> Export
+      </a>
+      <input ref={fileRef} type="file" accept=".csv" className="hidden" onChange={onImport} />
+      <button className="btn-secondary" onClick={() => fileRef.current?.click()}>
+        <I.Upload /> Import
+      </button>
+    </>
+  );
+
   return (
-    <div className="space-y-4">
-      <div className="flex items-center justify-between gap-3 flex-wrap">
-        <h1 className="text-2xl font-bold">Leads <span className="text-slate-500 text-base font-normal">({data.total.toLocaleString()})</span></h1>
-        <div className="flex gap-2 flex-wrap">
-          <a className="btn-secondary" href={api.exportUrl(params)} download>Export CSV</a>
-          <input ref={fileRef} type="file" accept=".csv" className="hidden" onChange={onImport} />
-          <button className="btn-secondary" onClick={() => fileRef.current?.click()}>Import CSV</button>
-        </div>
-      </div>
-
-      <div className="card grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-3">
-        <div>
-          <label className="label">Search</label>
-          <input className="input" value={filter.search} onChange={(e) => { setFilter({ ...filter, search: e.target.value }); setPage(0); }} placeholder="name, email, city, phone" />
-        </div>
-        <div>
-          <label className="label">Country</label>
-          <select className="input" value={filter.country} onChange={(e) => { setFilter({ ...filter, country: e.target.value }); setPage(0); }}>
-            <option value="">All</option>
-            {COUNTRIES.map((c) => <option key={c}>{c}</option>)}
-          </select>
-        </div>
-        <div>
-          <label className="label">Niche</label>
-          <input className="input" value={filter.niche} onChange={(e) => { setFilter({ ...filter, niche: e.target.value }); setPage(0); }} placeholder="exact niche" />
-        </div>
-        <div>
-          <label className="label">Email status</label>
-          <select className="input" value={filter.email_status} onChange={(e) => { setFilter({ ...filter, email_status: e.target.value }); setPage(0); }}>
-            <option value="">Any</option>
-            {EMAIL_STATUSES.map((s) => <option key={s}>{s}</option>)}
-          </select>
-        </div>
-        <div>
-          <label className="label">Website</label>
-          <select className="input" value={filter.website_status} onChange={(e) => { setFilter({ ...filter, website_status: e.target.value }); setPage(0); }}>
-            <option value="">Any</option>
-            {WEBSITE_STATUSES.map((s) => <option key={s}>{s}</option>)}
-          </select>
-        </div>
-        <div>
-          <label className="label">Has email?</label>
-          <select className="input" value={filter.has_email} onChange={(e) => { setFilter({ ...filter, has_email: e.target.value }); setPage(0); }}>
-            <option value="">Any</option>
-            <option value="true">With email</option>
-            <option value="false">Missing email</option>
-          </select>
-        </div>
-        <div>
-          <label className="label">Tag</label>
-          <input className="input" value={filter.tag} onChange={(e) => { setFilter({ ...filter, tag: e.target.value }); setPage(0); }} />
-        </div>
-        <div>
-          <label className="label">From</label>
-          <input className="input" type="date" value={filter.date_from} onChange={(e) => { setFilter({ ...filter, date_from: e.target.value }); setPage(0); }} />
-        </div>
-        <div>
-          <label className="label">To</label>
-          <input className="input" type="date" value={filter.date_to} onChange={(e) => { setFilter({ ...filter, date_to: e.target.value }); setPage(0); }} />
-        </div>
-        <div>
-          <label className="label">Include dupes</label>
-          <select className="input" value={filter.include_duplicates} onChange={(e) => { setFilter({ ...filter, include_duplicates: e.target.value }); setPage(0); }}>
-            <option value="false">Hide</option>
-            <option value="true">Show</option>
-          </select>
-        </div>
-      </div>
-
-      {selected.size > 0 && (
-        <div className="card flex items-center gap-2 flex-wrap">
-          <span className="text-sm">{selected.size} selected</span>
-          <button className="btn-secondary" onClick={bulkTag}>Add tag</button>
-          <Link className="btn-secondary" to="/campaigns/new" state={{ leadIds: [...selected] }}>Add to campaign</Link>
-          <button className="btn-danger" onClick={bulkDelete}>Delete</button>
-          <button className="btn-ghost ml-auto" onClick={() => setSelected(new Set())}>Clear</button>
+    <Layout
+      breadcrumb={['Leads', 'All']}
+      title={<>Leads <span className="text-charcoal-500 text-base font-normal ml-2">({data.total.toLocaleString()})</span></>}
+      actions={actions}
+    >
+      {showFilters && (
+        <div className="card mb-4 grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-3">
+          <div>
+            <label className="label">Search</label>
+            <input className="input" value={filter.search} onChange={(e) => { setFilter({ ...filter, search: e.target.value }); setPage(0); }} placeholder="name, email, city…" />
+          </div>
+          <div>
+            <label className="label">Country</label>
+            <select className="input" value={filter.country} onChange={(e) => { setFilter({ ...filter, country: e.target.value }); setPage(0); }}>
+              <option value="">All</option>
+              {COUNTRIES.map((c) => <option key={c}>{c}</option>)}
+            </select>
+          </div>
+          <div>
+            <label className="label">Niche</label>
+            <input className="input" value={filter.niche} onChange={(e) => { setFilter({ ...filter, niche: e.target.value }); setPage(0); }} placeholder="exact niche" />
+          </div>
+          <div>
+            <label className="label">Email status</label>
+            <select className="input" value={filter.email_status} onChange={(e) => { setFilter({ ...filter, email_status: e.target.value }); setPage(0); }}>
+              <option value="">Any</option>
+              {EMAIL_STATUSES.map((s) => <option key={s}>{s}</option>)}
+            </select>
+          </div>
+          <div>
+            <label className="label">Website</label>
+            <select className="input" value={filter.website_status} onChange={(e) => { setFilter({ ...filter, website_status: e.target.value }); setPage(0); }}>
+              <option value="">Any</option>
+              {WEBSITE_STATUSES.map((s) => <option key={s}>{s}</option>)}
+            </select>
+          </div>
+          <div>
+            <label className="label">Has email?</label>
+            <select className="input" value={filter.has_email} onChange={(e) => { setFilter({ ...filter, has_email: e.target.value }); setPage(0); }}>
+              <option value="">Any</option>
+              <option value="true">With email</option>
+              <option value="false">Missing email</option>
+            </select>
+          </div>
+          <div>
+            <label className="label">Tag</label>
+            <input className="input" value={filter.tag} onChange={(e) => { setFilter({ ...filter, tag: e.target.value }); setPage(0); }} />
+          </div>
+          <div>
+            <label className="label">From</label>
+            <input className="input" type="date" value={filter.date_from} onChange={(e) => { setFilter({ ...filter, date_from: e.target.value }); setPage(0); }} />
+          </div>
+          <div>
+            <label className="label">To</label>
+            <input className="input" type="date" value={filter.date_to} onChange={(e) => { setFilter({ ...filter, date_to: e.target.value }); setPage(0); }} />
+          </div>
+          <div>
+            <label className="label">Include dupes</label>
+            <select className="input" value={filter.include_duplicates} onChange={(e) => { setFilter({ ...filter, include_duplicates: e.target.value }); setPage(0); }}>
+              <option value="false">Hide</option>
+              <option value="true">Show</option>
+            </select>
+          </div>
         </div>
       )}
 
-      {importMsg && <div className="text-sm text-slate-500">{importMsg}</div>}
+      {selected.size > 0 && (
+        <div className="card mb-4 flex items-center gap-2 flex-wrap">
+          <span className="text-sm text-charcoal-200">{selected.size} selected</span>
+          <div className="ml-auto flex items-center gap-2">
+            <button className="btn-secondary" onClick={bulkTag}><I.Tag /> Add tag</button>
+            <Link className="btn-secondary" to="/campaigns/new" state={{ leadIds: [...selected] }}>
+              <I.Send /> Add to campaign
+            </Link>
+            <button className="btn-danger" onClick={bulkDelete}><I.Trash /> Delete</button>
+            <button className="btn-ghost" onClick={() => setSelected(new Set())}>Clear</button>
+          </div>
+        </div>
+      )}
 
-      <div className="card overflow-x-auto p-0">
-        <table className="min-w-full divide-y divide-slate-200 dark:divide-slate-800">
-          <thead className="bg-slate-50 dark:bg-slate-800/50">
-            <tr>
-              <th className="th px-3 py-2"><input type="checkbox" checked={selected.size === data.rows.length && data.rows.length > 0} onChange={toggleAll} /></th>
-              <th className="th px-3 py-2">Business</th>
-              <th className="th px-3 py-2">Niche</th>
-              <th className="th px-3 py-2">Country</th>
-              <th className="th px-3 py-2">City</th>
-              <th className="th px-3 py-2">Email</th>
-              <th className="th px-3 py-2">Phone</th>
-              <th className="th px-3 py-2">Website</th>
-              <th className="th px-3 py-2">Email status</th>
-              <th className="th px-3 py-2">Tags</th>
+      {importMsg && <div className="text-sm text-charcoal-400 mb-3">{importMsg}</div>}
+
+      <div className="card-flat overflow-x-auto p-0">
+        <table className="min-w-full">
+          <thead>
+            <tr className="border-b border-charcoal-800">
+              <th className="th w-10"><input type="checkbox" className="accent-brand-500" checked={selected.size === data.rows.length && data.rows.length > 0} onChange={toggleAll} /></th>
+              <th className="th">Business</th>
+              <th className="th">Niche</th>
+              <th className="th">Country</th>
+              <th className="th">City</th>
+              <th className="th">Email</th>
+              <th className="th">Phone</th>
+              <th className="th">Website</th>
+              <th className="th">Email status</th>
+              <th className="th">Tags</th>
             </tr>
           </thead>
-          <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
+          <tbody>
             {data.rows.map((r) => (
-              <tr key={r.id} className={selected.has(r.id) ? 'bg-brand-50 dark:bg-brand-900/20' : ''}>
-                <td className="td px-3 py-2"><input type="checkbox" checked={selected.has(r.id)} onChange={() => toggle(r.id)} /></td>
-                <td className="td px-3 py-2 font-medium flex items-center gap-2">
-                  {r.business_name}
-                  {r.is_duplicate && <span className="chip tag-yellow" title="Possible duplicate">dup</span>}
+              <tr key={r.id} className={`border-b border-charcoal-800/60 hover:bg-charcoal-850/60 ${selected.has(r.id) ? 'bg-brand-500/5' : ''}`}>
+                <td className="td"><input type="checkbox" className="accent-brand-500" checked={selected.has(r.id)} onChange={() => toggle(r.id)} /></td>
+                <td className="td font-medium">
+                  <div className="flex items-center gap-2">
+                    {r.business_name}
+                    {r.is_duplicate && <span className="chip chip-yellow" title="Possible duplicate">dup</span>}
+                  </div>
                 </td>
-                <td className="td px-3 py-2">{r.category}</td>
-                <td className="td px-3 py-2">{r.country}</td>
-                <td className="td px-3 py-2">{r.city}</td>
-                <td className="td px-3 py-2">{r.email || <span className="text-slate-400">—</span>}</td>
-                <td className="td px-3 py-2">{r.phone}</td>
-                <td className="td px-3 py-2"><WebsiteBadge status={r.website_status} /></td>
-                <td className="td px-3 py-2"><StatusBadge status={r.email_status} /></td>
-                <td className="td px-3 py-2">
+                <td className="td text-charcoal-300">{r.category}</td>
+                <td className="td text-charcoal-300">{r.country}</td>
+                <td className="td text-charcoal-300">{r.city}</td>
+                <td className="td text-charcoal-300">{r.email || <span className="text-charcoal-500">—</span>}</td>
+                <td className="td text-charcoal-300">{r.phone}</td>
+                <td className="td"><WebsiteBadge status={r.website_status} /></td>
+                <td className="td"><StatusBadge status={r.email_status} /></td>
+                <td className="td">
                   <div className="flex flex-wrap gap-1">
                     {(r.tags || []).map((t) => <span key={t} className="chip">{t}</span>)}
                   </div>
@@ -212,18 +233,21 @@ export default function Leads() {
               </tr>
             ))}
             {!data.rows.length && (
-              <tr><td className="td p-6 text-center text-slate-500" colSpan={10}>No leads — run a scrape job to get started.</td></tr>
+              <tr><td className="td p-12 text-center text-charcoal-400" colSpan={10}>
+                <I.Inbox className="mx-auto mb-3 opacity-50" width={32} height={32} />
+                No leads yet — run a scrape job to get started.
+              </td></tr>
             )}
           </tbody>
         </table>
       </div>
 
-      <div className="flex items-center gap-2 justify-end">
+      <div className="flex items-center gap-2 justify-end mt-4">
         <button className="btn-secondary" disabled={page === 0} onClick={() => setPage((p) => Math.max(0, p - 1))}>Prev</button>
-        <span className="text-sm text-slate-500">Page {page + 1}</span>
+        <span className="text-sm text-charcoal-400">Page {page + 1}</span>
         <button className="btn-secondary" disabled={(page + 1) * pageSize >= data.total} onClick={() => setPage((p) => p + 1)}>Next</button>
-        {busy && <span className="text-xs text-slate-400 ml-2">Loading…</span>}
+        {busy && <span className="text-xs text-charcoal-500 ml-2">Loading…</span>}
       </div>
-    </div>
+    </Layout>
   );
 }

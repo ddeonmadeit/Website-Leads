@@ -21,27 +21,33 @@ export default function EmailPreview({ subject, html, text }) {
 
   const frame = device === 'mobile' ? 'w-[375px]' : 'w-full';
 
+  const Tab = ({ active, onClick, children }) => (
+    <button onClick={onClick} className={`px-2.5 py-1 text-xs rounded transition-colors ${active ? 'bg-charcoal-800 text-brand-400' : 'text-charcoal-400 hover:text-charcoal-200'}`}>
+      {children}
+    </button>
+  );
+
   return (
     <div className="card sticky top-20">
-      <div className="flex items-center justify-between mb-2">
-        <div className="font-semibold">Preview</div>
+      <div className="flex items-center justify-between mb-3">
+        <div className="font-semibold text-charcoal-100">Preview</div>
         <div className="flex items-center gap-1">
-          <button className={`btn-ghost text-xs ${device === 'desktop' ? 'bg-slate-200 dark:bg-slate-700' : ''}`} onClick={() => setDevice('desktop')}>Desktop</button>
-          <button className={`btn-ghost text-xs ${device === 'mobile' ? 'bg-slate-200 dark:bg-slate-700' : ''}`} onClick={() => setDevice('mobile')}>Mobile</button>
-          <span className="w-px bg-slate-300 dark:bg-slate-700 mx-1" />
-          <button className={`btn-ghost text-xs ${view === 'html' ? 'bg-slate-200 dark:bg-slate-700' : ''}`} onClick={() => setView('html')}>HTML</button>
-          <button className={`btn-ghost text-xs ${view === 'text' ? 'bg-slate-200 dark:bg-slate-700' : ''}`} onClick={() => setView('text')}>Plain</button>
+          <Tab active={device === 'desktop'} onClick={() => setDevice('desktop')}>Desktop</Tab>
+          <Tab active={device === 'mobile'} onClick={() => setDevice('mobile')}>Mobile</Tab>
+          <span className="w-px bg-charcoal-700 mx-1 h-4" />
+          <Tab active={view === 'html'} onClick={() => setView('html')}>HTML</Tab>
+          <Tab active={view === 'text'} onClick={() => setView('text')}>Plain</Tab>
         </div>
       </div>
-      <div className="text-xs text-slate-500 mb-2">Subject</div>
-      <div className="font-medium mb-3">{rendered.subject || <span className="text-slate-400">(empty)</span>}</div>
-      <div className={`mx-auto border border-slate-200 dark:border-slate-800 rounded-md ${frame} bg-white dark:bg-slate-50 transition-all`}>
+      <div className="text-xs text-charcoal-400 mb-1">Subject</div>
+      <div className="font-medium mb-3 text-charcoal-100">{rendered.subject || <span className="text-charcoal-500">(empty)</span>}</div>
+      <div className={`mx-auto border border-charcoal-800 rounded-lg ${frame} bg-white transition-all`}>
         {view === 'html' ? (
           <iframe
             title="email-preview"
             sandbox=""
-            className="w-full min-h-[420px] rounded-md"
-            srcDoc={`<!doctype html><html><body style="font-family:Arial,sans-serif;color:#222;padding:16px">${rendered.html || ''}</body></html>`}
+            className="w-full min-h-[420px] rounded-lg"
+            srcDoc={`<!doctype html><html><body style="font-family:Arial,sans-serif;color:#222;padding:16px;background:#fff">${rendered.html || ''}</body></html>`}
           />
         ) : (
           <pre className="text-xs p-4 whitespace-pre-wrap text-slate-700">{rendered.text || ''}</pre>
