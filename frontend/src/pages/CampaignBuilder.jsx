@@ -1,8 +1,10 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useNavigate, useParams, useLocation } from 'react-router-dom';
 import { api } from '../api.js';
+import Layout from '../components/Layout.jsx';
 import RichEditor from '../components/RichEditor.jsx';
 import EmailPreview from '../components/EmailPreview.jsx';
+import { I } from '../components/Icons.jsx';
 
 const DEFAULT_BODY = `<p>Hi {{business_name}},</p>
 <p>I noticed you're operating in {{city}} but don't have a website yet. We help local businesses launch a clean professional site in days.</p>
@@ -25,7 +27,7 @@ export default function CampaignBuilder() {
   const [spam, setSpam] = useState({ score: 0, hits: [] });
   const [busy, setBusy] = useState(false);
   const [msg, setMsg] = useState('');
-  const [filterMode, setFilterMode] = useState('selected'); // selected | filter
+  const [filterMode, setFilterMode] = useState('selected');
   const [filter, setFilter] = useState({ has_email: 'true', include_duplicates: 'false' });
 
   useEffect(() => {
@@ -49,7 +51,6 @@ export default function CampaignBuilder() {
     }
   }, [id]);
 
-  // spam-check on subject (debounced)
   useEffect(() => {
     if (!form.subject) { setSpam({ score: 0, hits: [] }); return; }
     const t = setTimeout(() => {
@@ -118,69 +119,76 @@ export default function CampaignBuilder() {
   };
 
   return (
-    <div className="space-y-4">
-      <h1 className="text-2xl font-bold">{savedId ? 'Edit campaign' : 'New campaign'}</h1>
-
-      <div className="grid lg:grid-cols-2 gap-4">
+    <Layout
+      breadcrumb={['Outreach', 'Campaigns', savedId ? 'Edit' : 'New']}
+      title={savedId ? 'Edit campaign' : 'New campaign'}
+    >
+      <div className="grid lg:grid-cols-2 gap-6">
         <div className="space-y-4">
-          <div className="card grid grid-cols-1 md:grid-cols-2 gap-3">
-            <div className="md:col-span-2">
-              <label className="label">Campaign name</label>
-              <input className="input" value={form.name} onChange={(e) => set('name', e.target.value)} />
-            </div>
-            <div>
-              <label className="label">From name</label>
-              <input className="input" value={form.from_name} onChange={(e) => set('from_name', e.target.value)} />
-            </div>
-            <div>
-              <label className="label">From email (verified in Resend)</label>
-              <input className="input" type="email" value={form.from_email} onChange={(e) => set('from_email', e.target.value)} placeholder="hello@yourdomain.com" />
-            </div>
-            <div className="md:col-span-2">
-              <label className="label">Reply-to</label>
-              <input className="input" type="email" value={form.reply_to} onChange={(e) => set('reply_to', e.target.value)} />
-            </div>
-            <div className="md:col-span-2">
-              <label className="label">Subject (supports merge tags)</label>
-              <input className="input" value={form.subject} onChange={(e) => set('subject', e.target.value)} placeholder="Quick idea for {{business_name}}" />
-              {spam.hits?.length > 0 && (
-                <div className="mt-2 text-xs text-amber-600 dark:text-amber-400">
-                  ⚠ Spam triggers detected: {spam.hits.join(', ')}
-                </div>
-              )}
+          <div className="card">
+            <div className="font-semibold text-charcoal-100 mb-3">Sender</div>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+              <div className="md:col-span-2">
+                <label className="label">Campaign name</label>
+                <input className="input" value={form.name} onChange={(e) => set('name', e.target.value)} />
+              </div>
+              <div>
+                <label className="label">From name</label>
+                <input className="input" value={form.from_name} onChange={(e) => set('from_name', e.target.value)} />
+              </div>
+              <div>
+                <label className="label">From email (verified in Resend)</label>
+                <input className="input" type="email" value={form.from_email} onChange={(e) => set('from_email', e.target.value)} placeholder="hello@yourdomain.com" />
+              </div>
+              <div className="md:col-span-2">
+                <label className="label">Reply-to</label>
+                <input className="input" type="email" value={form.reply_to} onChange={(e) => set('reply_to', e.target.value)} />
+              </div>
+              <div className="md:col-span-2">
+                <label className="label">Subject (supports merge tags)</label>
+                <input className="input" value={form.subject} onChange={(e) => set('subject', e.target.value)} placeholder="Quick idea for {{business_name}}" />
+                {spam.hits?.length > 0 && (
+                  <div className="mt-2 text-xs text-amber-400">
+                    ⚠ Spam triggers detected: {spam.hits.join(', ')}
+                  </div>
+                )}
+              </div>
             </div>
           </div>
 
           <div className="card">
-            <label className="label">Body</label>
+            <div className="font-semibold text-charcoal-100 mb-3">Body</div>
             <RichEditor value={form.body_html} onChange={(v) => set('body_html', v)} />
-            <div className="text-xs text-slate-500 mt-2">A plain-text version is auto-generated. Unsubscribe link is appended automatically.</div>
+            <div className="text-xs text-charcoal-500 mt-2">A plain-text version is auto-generated. Unsubscribe link is appended automatically.</div>
           </div>
 
-          <div className="card grid grid-cols-1 md:grid-cols-3 gap-3">
-            <div>
-              <label className="label">Hourly limit</label>
-              <input className="input" type="number" min="1" max="500" value={form.hourly_limit} onChange={(e) => set('hourly_limit', Number(e.target.value))} />
-            </div>
-            <div>
-              <label className="label">Delay between sends (ms)</label>
-              <input className="input" type="number" min="0" max="60000" value={form.batch_delay_ms} onChange={(e) => set('batch_delay_ms', Number(e.target.value))} />
-            </div>
-            <div>
-              <label className="label">Schedule (optional)</label>
-              <input className="input" type="datetime-local" value={form.scheduled_at} onChange={(e) => set('scheduled_at', e.target.value)} />
+          <div className="card">
+            <div className="font-semibold text-charcoal-100 mb-3">Sending settings</div>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+              <div>
+                <label className="label">Hourly limit</label>
+                <input className="input" type="number" min="1" max="500" value={form.hourly_limit} onChange={(e) => set('hourly_limit', Number(e.target.value))} />
+              </div>
+              <div>
+                <label className="label">Delay between sends (ms)</label>
+                <input className="input" type="number" min="0" max="60000" value={form.batch_delay_ms} onChange={(e) => set('batch_delay_ms', Number(e.target.value))} />
+              </div>
+              <div>
+                <label className="label">Schedule (optional)</label>
+                <input className="input" type="datetime-local" value={form.scheduled_at} onChange={(e) => set('scheduled_at', e.target.value)} />
+              </div>
             </div>
           </div>
 
           <div className="card">
-            <div className="font-semibold mb-2">Recipients</div>
-            <div className="flex gap-3 mb-3">
-              <label className="flex items-center gap-2 text-sm">
-                <input type="radio" checked={filterMode === 'selected'} onChange={() => setFilterMode('selected')} />
-                Use selection from Leads page ({initialIds?.length || 0})
+            <div className="font-semibold text-charcoal-100 mb-3">Recipients</div>
+            <div className="flex gap-4 mb-3">
+              <label className="flex items-center gap-2 text-sm text-charcoal-200">
+                <input type="radio" className="accent-brand-500" checked={filterMode === 'selected'} onChange={() => setFilterMode('selected')} />
+                Use selection from Leads ({initialIds?.length || 0})
               </label>
-              <label className="flex items-center gap-2 text-sm">
-                <input type="radio" checked={filterMode === 'filter'} onChange={() => setFilterMode('filter')} />
+              <label className="flex items-center gap-2 text-sm text-charcoal-200">
+                <input type="radio" className="accent-brand-500" checked={filterMode === 'filter'} onChange={() => setFilterMode('filter')} />
                 Use filter
               </label>
             </div>
@@ -196,16 +204,20 @@ export default function CampaignBuilder() {
               </div>
             )}
             <div className="flex items-center gap-2">
-              <button className="btn-secondary" onClick={addRecipients} disabled={busy}>Add to campaign</button>
-              <span className="text-sm text-slate-500">{recipientCount} recipient(s) attached</span>
+              <button className="btn-secondary" onClick={addRecipients} disabled={busy}>
+                <I.Plus /> Add to campaign
+              </button>
+              <span className="text-sm text-charcoal-400">{recipientCount} recipient(s) attached</span>
             </div>
           </div>
 
           <div className="flex flex-wrap gap-2">
             <button className="btn-secondary" onClick={save} disabled={busy}>Save draft</button>
-            <button className="btn-primary" onClick={() => launch(true)} disabled={busy}>Send now</button>
+            <button className="btn-primary" onClick={() => launch(true)} disabled={busy}>
+              <I.Send /> Send now
+            </button>
             {form.scheduled_at && <button className="btn-secondary" onClick={() => launch(false)} disabled={busy}>Schedule</button>}
-            {msg && <span className="text-sm text-slate-500 self-center">{msg}</span>}
+            {msg && <span className="text-sm text-charcoal-400 self-center">{msg}</span>}
           </div>
         </div>
 
@@ -213,6 +225,6 @@ export default function CampaignBuilder() {
           <EmailPreview subject={form.subject} html={form.body_html} text={form.body_text} />
         </div>
       </div>
-    </div>
+    </Layout>
   );
 }

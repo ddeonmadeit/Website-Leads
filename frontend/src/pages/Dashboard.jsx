@@ -1,16 +1,9 @@
 import { useEffect, useState } from 'react';
-import { api } from '../api.js';
 import { Link } from 'react-router-dom';
-
-function Stat({ label, value, hint }) {
-  return (
-    <div className="card">
-      <div className="text-xs uppercase text-slate-500">{label}</div>
-      <div className="text-2xl font-bold mt-1">{value}</div>
-      {hint && <div className="text-xs text-slate-500 mt-1">{hint}</div>}
-    </div>
-  );
-}
+import { api } from '../api.js';
+import Layout from '../components/Layout.jsx';
+import StatCard from '../components/StatCard.jsx';
+import { I } from '../components/Icons.jsx';
 
 function pct(x) {
   return `${Math.round((Number(x) || 0) * 1000) / 10}%`;
@@ -29,43 +22,99 @@ export default function Dashboard() {
     return () => clearInterval(i);
   }, []);
 
-  if (err) return <div className="text-red-600">{err}</div>;
-  if (!stats) return <div className="text-slate-500">Loading…</div>;
-  const l = stats.leads || {};
+  const l = stats?.leads || {};
+
+  const actions = (
+    <>
+      <Link to="/scrape" className="btn-secondary">
+        <I.Search /> New scrape
+      </Link>
+      <Link to="/campaigns/new" className="btn-primary">
+        <I.Plus /> New campaign
+      </Link>
+    </>
+  );
+
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold">Overview</h1>
-        <div className="flex gap-2">
-          <Link to="/scrape" className="btn-secondary">New scrape</Link>
-          <Link to="/campaigns/new" className="btn-primary">New campaign</Link>
+    <Layout breadcrumb={['Dashboard', 'Overview']} title="Analytics" actions={actions}>
+      {err && <div className="card mb-4 text-red-300">{err}</div>}
+
+      <div className="card-flat p-5 mb-6 flex items-start gap-4">
+        <div className="h-10 w-10 rounded-lg bg-brand-500/15 text-brand-400 flex items-center justify-center">
+          <I.Zap />
         </div>
-      </div>
-      <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-3">
-        <Stat label="Total leads" value={l.total || 0} />
-        <Stat label="With email" value={l.with_email || 0} />
-        <Stat label="Emails sent" value={l.sent || 0} />
-        <Stat label="Opens" value={l.opened || 0} />
-        <Stat label="Bounces" value={l.bounced || 0} />
-        <Stat label="Open rate" value={pct(l.open_rate)} />
-        <Stat label="Bounce rate" value={pct(l.bounce_rate)} />
-      </div>
-      <div className="grid md:grid-cols-2 gap-3">
-        <div className="card">
-          <div className="font-semibold mb-2">Scrape jobs</div>
-          <div className="text-sm text-slate-500">
-            Running: {stats.jobs?.running || 0} · Queued: {stats.jobs?.queued || 0} · Completed: {stats.jobs?.done || 0}
+        <div className="flex-1">
+          <div className="font-semibold text-charcoal-100">Find businesses without websites</div>
+          <div className="text-sm text-charcoal-400 mt-1">
+            Scrape Google Maps, Yellow Pages and public Facebook pages across PH, IN, ZA, UAE.
+            Filter, tag, and launch personalised cold-email campaigns through Resend.
           </div>
-          <Link to="/scrape" className="text-brand-600 text-sm mt-2 inline-block">Manage →</Link>
-        </div>
-        <div className="card">
-          <div className="font-semibold mb-2">Campaigns</div>
-          <div className="text-sm text-slate-500">
-            Sending: {stats.campaigns?.sending || 0} · Scheduled: {stats.campaigns?.scheduled || 0} · Done: {stats.campaigns?.done || 0}
+          <div className="mt-3 flex gap-2">
+            <Link to="/scrape" className="btn-primary"><I.Search /> Run a scrape</Link>
+            <Link to="/leads" className="btn-secondary"><I.Users /> View leads</Link>
           </div>
-          <Link to="/campaigns" className="text-brand-600 text-sm mt-2 inline-block">Manage →</Link>
         </div>
       </div>
-    </div>
+
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+        <StatCard label="Total leads" value={(l.total || 0).toLocaleString()} hint={`${l.with_email || 0} with email`} />
+        <StatCard label="Emails sent" value={(l.sent || 0).toLocaleString()} hint="across all campaigns" />
+        <StatCard label="Opens" value={(l.opened || 0).toLocaleString()} hint={pct(l.open_rate) + ' open rate'} />
+        <StatCard label="Bounces" value={(l.bounced || 0).toLocaleString()} hint={pct(l.bounce_rate) + ' bounce rate'} color="#ef4444" />
+        <StatCard label="Unsubscribed" value={(l.unsubscribed || 0).toLocaleString()} color="#f59e0b" />
+        <StatCard label="Duplicates" value={(l.duplicates || 0).toLocaleString()} hint="auto-flagged" color="#94a3b8" />
+      </div>
+
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-6">
+        <div className="card card-hover">
+          <div className="flex items-center justify-between">
+            <div>
+              <div className="text-sm font-medium text-charcoal-100">Scrape jobs</div>
+              <div className="text-xs text-charcoal-400 mt-0.5">Background queue</div>
+            </div>
+            <I.Search className="text-charcoal-500" />
+          </div>
+          <div className="mt-4 grid grid-cols-3 gap-3">
+            <div>
+              <div className="text-xs text-charcoal-400">Running</div>
+              <div className="text-lg font-semibold text-brand-400">{stats?.jobs?.running || 0}</div>
+            </div>
+            <div>
+              <div className="text-xs text-charcoal-400">Queued</div>
+              <div className="text-lg font-semibold">{stats?.jobs?.queued || 0}</div>
+            </div>
+            <div>
+              <div className="text-xs text-charcoal-400">Completed</div>
+              <div className="text-lg font-semibold">{stats?.jobs?.done || 0}</div>
+            </div>
+          </div>
+          <Link to="/scrape" className="text-brand-400 text-sm mt-4 inline-block hover:text-brand-300">Manage →</Link>
+        </div>
+        <div className="card card-hover">
+          <div className="flex items-center justify-between">
+            <div>
+              <div className="text-sm font-medium text-charcoal-100">Campaigns</div>
+              <div className="text-xs text-charcoal-400 mt-0.5">Sending pipeline</div>
+            </div>
+            <I.Send className="text-charcoal-500" />
+          </div>
+          <div className="mt-4 grid grid-cols-3 gap-3">
+            <div>
+              <div className="text-xs text-charcoal-400">Sending</div>
+              <div className="text-lg font-semibold text-brand-400">{stats?.campaigns?.sending || 0}</div>
+            </div>
+            <div>
+              <div className="text-xs text-charcoal-400">Scheduled</div>
+              <div className="text-lg font-semibold">{stats?.campaigns?.scheduled || 0}</div>
+            </div>
+            <div>
+              <div className="text-xs text-charcoal-400">Completed</div>
+              <div className="text-lg font-semibold">{stats?.campaigns?.done || 0}</div>
+            </div>
+          </div>
+          <Link to="/campaigns" className="text-brand-400 text-sm mt-4 inline-block hover:text-brand-300">Manage →</Link>
+        </div>
+      </div>
+    </Layout>
   );
 }

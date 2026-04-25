@@ -5,8 +5,6 @@ import cookieParser from 'cookie-parser';
 import helmet from 'helmet';
 import morgan from 'morgan';
 
-import { requireAuth } from './auth.js';
-import authRoutes from './routes/auth.js';
 import leadsRoutes from './routes/leads.js';
 import scrapeJobsRoutes from './routes/scrapeJobs.js';
 import campaignsRoutes from './routes/campaigns.js';
@@ -24,19 +22,7 @@ app.set('trust proxy', 1);
 app.use(helmet({ contentSecurityPolicy: false }));
 app.use(morgan('tiny'));
 
-const allowedOrigins = [
-  process.env.PUBLIC_FRONTEND_URL,
-  'http://localhost:5173',
-  'http://localhost:4173',
-].filter(Boolean);
-app.use(cors({
-  origin(origin, cb) {
-    if (!origin) return cb(null, true);
-    if (allowedOrigins.includes(origin)) return cb(null, true);
-    cb(null, true); // permissive; tighten via env if desired
-  },
-  credentials: true,
-}));
+app.use(cors({ origin: true, credentials: true }));
 app.use(cookieParser());
 
 // Webhook routes need raw body for signature verification, mount before JSON parser.
@@ -47,10 +33,7 @@ app.use(express.urlencoded({ extended: true }));
 
 app.get('/healthz', (_req, res) => res.json({ ok: true }));
 
-app.use('/auth', authRoutes);
 app.use('/unsubscribe', unsubscribeRoutes);
-
-app.use(requireAuth);
 
 app.use('/leads', leadsRoutes);
 app.use('/scrape-jobs', scrapeJobsRoutes);

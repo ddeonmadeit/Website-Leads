@@ -12,14 +12,7 @@ async function req(path, opts = {}) {
     ...opts,
     headers,
     body: payload,
-    credentials: 'include',
   });
-  if (resp.status === 401) {
-    if (!path.startsWith('/auth/')) {
-      window.location.hash = '';
-      window.dispatchEvent(new Event('leadscout-unauthenticated'));
-    }
-  }
   const text = await resp.text();
   const data = text ? (() => { try { return JSON.parse(text); } catch { return text; } })() : null;
   if (!resp.ok) {
@@ -32,10 +25,6 @@ async function req(path, opts = {}) {
 }
 
 export const api = {
-  login: (username, password) => req('/auth/login', { method: 'POST', body: { username, password } }),
-  logout: () => req('/auth/logout', { method: 'POST' }),
-  me: () => req('/auth/me'),
-
   stats: () => req('/stats'),
 
   listLeads: (params) => req(`/leads?${new URLSearchParams(params).toString()}`),

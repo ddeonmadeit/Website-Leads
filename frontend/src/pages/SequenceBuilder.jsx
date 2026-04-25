@@ -1,8 +1,10 @@
 import { useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { api } from '../api.js';
+import Layout from '../components/Layout.jsx';
 import RichEditor from '../components/RichEditor.jsx';
 import EmailPreview from '../components/EmailPreview.jsx';
+import { I } from '../components/Icons.jsx';
 
 const DEFAULT_STEPS = [
   { day_offset: 0, subject: 'Quick question for {{business_name}}', body_html: '<p>Hi {{business_name}},</p><p>I noticed you don\'t have a website yet — we can help.</p>' },
@@ -77,44 +79,61 @@ export default function SequenceBuilder() {
   const step = steps[activeStep] || steps[0];
   if (!step) return null;
 
+  const actions = (
+    <>
+      <button className="btn-secondary" onClick={enroll}>
+        <I.Users /> Enroll leads
+      </button>
+      <button className="btn-primary" onClick={save}>Save</button>
+    </>
+  );
+
   return (
-    <div className="space-y-4">
-      <h1 className="text-2xl font-bold">{savedId ? 'Edit sequence' : 'New sequence'}</h1>
-      <div className="card grid grid-cols-1 md:grid-cols-4 gap-3">
-        <div className="md:col-span-2">
-          <label className="label">Name</label>
-          <input className="input" value={seq.name} onChange={(e) => setSeq({ ...seq, name: e.target.value })} />
-        </div>
-        <div>
-          <label className="label">From name</label>
-          <input className="input" value={seq.from_name} onChange={(e) => setSeq({ ...seq, from_name: e.target.value })} />
-        </div>
-        <div>
-          <label className="label">From email</label>
-          <input className="input" value={seq.from_email} onChange={(e) => setSeq({ ...seq, from_email: e.target.value })} />
-        </div>
-        <div className="md:col-span-2">
-          <label className="label">Reply-to</label>
-          <input className="input" value={seq.reply_to} onChange={(e) => setSeq({ ...seq, reply_to: e.target.value })} />
+    <Layout
+      breadcrumb={['Outreach', 'Sequences', savedId ? 'Edit' : 'New']}
+      title={savedId ? 'Edit sequence' : 'New sequence'}
+      actions={actions}
+    >
+      <div className="card mb-4">
+        <div className="font-semibold text-charcoal-100 mb-3">Sender</div>
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
+          <div className="md:col-span-2">
+            <label className="label">Name</label>
+            <input className="input" value={seq.name} onChange={(e) => setSeq({ ...seq, name: e.target.value })} />
+          </div>
+          <div>
+            <label className="label">From name</label>
+            <input className="input" value={seq.from_name} onChange={(e) => setSeq({ ...seq, from_name: e.target.value })} />
+          </div>
+          <div>
+            <label className="label">From email</label>
+            <input className="input" value={seq.from_email} onChange={(e) => setSeq({ ...seq, from_email: e.target.value })} />
+          </div>
+          <div className="md:col-span-2">
+            <label className="label">Reply-to</label>
+            <input className="input" value={seq.reply_to} onChange={(e) => setSeq({ ...seq, reply_to: e.target.value })} />
+          </div>
         </div>
       </div>
 
-      <div className="card p-0 overflow-hidden">
-        <div className="flex border-b border-slate-200 dark:border-slate-800 overflow-x-auto">
+      <div className="card-flat overflow-hidden mb-4">
+        <div className="flex border-b border-charcoal-800 overflow-x-auto bg-charcoal-875">
           {steps.map((s, i) => (
             <button
               key={i}
               onClick={() => setActiveStep(i)}
-              className={`px-4 py-2 text-sm whitespace-nowrap ${i === activeStep
-                ? 'bg-white dark:bg-slate-900 border-b-2 border-brand-600 font-semibold'
-                : 'text-slate-500 hover:bg-slate-50 dark:hover:bg-slate-800'}`}
+              className={`px-4 py-3 text-sm whitespace-nowrap transition-colors ${i === activeStep
+                ? 'bg-charcoal-850 text-brand-400 border-b-2 border-brand-500 font-medium'
+                : 'text-charcoal-400 hover:bg-charcoal-800 hover:text-charcoal-200'}`}
             >
               Email {i + 1} · day {s.day_offset}
             </button>
           ))}
-          <button onClick={addStep} className="px-4 py-2 text-sm text-brand-600 hover:bg-brand-50 dark:hover:bg-brand-900/20">+ Add step</button>
+          <button onClick={addStep} className="px-4 py-3 text-sm text-brand-400 hover:bg-charcoal-800 whitespace-nowrap">
+            + Add step
+          </button>
         </div>
-        <div className="p-4 grid lg:grid-cols-2 gap-4">
+        <div className="p-5 grid lg:grid-cols-2 gap-5">
           <div className="space-y-3">
             <div className="grid grid-cols-2 gap-3">
               <div>
@@ -122,7 +141,9 @@ export default function SequenceBuilder() {
                 <input className="input" type="number" min="0" max="365" value={step.day_offset} onChange={(e) => updateStep(activeStep, { day_offset: Number(e.target.value) })} />
               </div>
               <div className="flex items-end justify-end">
-                <button className="btn-ghost text-red-600" onClick={() => removeStep(activeStep)} disabled={steps.length <= 1}>Remove step</button>
+                <button className="btn-ghost text-red-400" onClick={() => removeStep(activeStep)} disabled={steps.length <= 1}>
+                  <I.Trash /> Remove
+                </button>
               </div>
             </div>
             <div>
@@ -141,7 +162,7 @@ export default function SequenceBuilder() {
       </div>
 
       <div className="card">
-        <div className="font-semibold mb-2">Enroll leads</div>
+        <div className="font-semibold text-charcoal-100 mb-3">Enroll leads</div>
         <div className="grid grid-cols-2 md:grid-cols-4 gap-2 mb-3">
           <input className="input" placeholder="Country" value={enrollFilter.country || ''} onChange={(e) => setEnrollFilter({ ...enrollFilter, country: e.target.value })} />
           <input className="input" placeholder="Niche" value={enrollFilter.niche || ''} onChange={(e) => setEnrollFilter({ ...enrollFilter, niche: e.target.value })} />
@@ -151,13 +172,11 @@ export default function SequenceBuilder() {
             <option value="">Any</option>
           </select>
         </div>
-        <button className="btn-secondary" onClick={enroll}>Enroll matching leads</button>
+        <button className="btn-secondary" onClick={enroll}>
+          <I.Users /> Enroll matching leads
+        </button>
+        {msg && <div className="text-sm text-charcoal-400 mt-3">{msg}</div>}
       </div>
-
-      <div className="flex gap-2">
-        <button className="btn-primary" onClick={save}>Save</button>
-        {msg && <span className="text-sm text-slate-500 self-center">{msg}</span>}
-      </div>
-    </div>
+    </Layout>
   );
 }
