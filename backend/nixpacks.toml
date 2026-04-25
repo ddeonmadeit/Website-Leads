@@ -1,0 +1,30 @@
+# Nixpacks picks up package.json automatically. We add Chromium deps for Puppeteer.
+[phases.setup]
+aptPkgs = [
+  "chromium",
+  "ca-certificates",
+  "fonts-liberation",
+  "libasound2",
+  "libatk-bridge2.0-0",
+  "libatk1.0-0",
+  "libcups2",
+  "libdrm2",
+  "libgbm1",
+  "libgtk-3-0",
+  "libnspr4",
+  "libnss3",
+  "libxcomposite1",
+  "libxdamage1",
+  "libxfixes3",
+  "libxrandr2",
+  "xdg-utils"
+]
+
+[phases.build]
+cmds = ["npm install --omit=dev"]
+
+[start]
+cmd = "node src/migrate.js && node src/index.js"
+
+[variables]
+PUPPETEER_SKIP_DOWNLOAD = "false"
