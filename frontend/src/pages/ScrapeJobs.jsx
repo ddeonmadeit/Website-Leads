@@ -9,6 +9,47 @@ const SOURCES = [
   { id: 'facebook', label: 'Facebook (public)' },
 ];
 
+// Fallback presets — keep in sync with backend/src/scraper/presets.js so the
+// dropdowns are populated even if the /presets request hasn't returned yet.
+const FALLBACK_PRESETS = {
+  countries: ['Philippines', 'India', 'South Africa', 'UAE'],
+  presets: {
+    Philippines: {
+      niches: [
+        'Real Estate Agencies & Brokers',
+        'Dental / Aesthetic / Medical Clinics',
+        'Construction / Contractors',
+        'Resorts / Boutique Hotels',
+        'Logistics / Freight / Export',
+      ],
+    },
+    India: {
+      niches: [
+        'Coaching Institutes / Education Businesses',
+        'Medical Clinics / Diagnostics',
+        'Real Estate Developers / Brokers',
+        'Recruitment / Staffing Agencies',
+      ],
+    },
+    'South Africa': {
+      niches: [
+        'Law Firms',
+        'Security Companies',
+        'Construction & Engineering',
+        'Accounting Firms',
+        'Insurance Brokers',
+      ],
+    },
+    UAE: {
+      niches: [
+        'Real Estate Agencies',
+        'Luxury Clinics / Car Rentals / Concierge',
+        'B2B Logistics / Trade / Consulting',
+      ],
+    },
+  },
+};
+
 function StatusPill({ status }) {
   const map = {
     queued: 'chip-blue', running: 'chip-orange',
@@ -18,10 +59,10 @@ function StatusPill({ status }) {
 }
 
 export default function ScrapeJobs() {
-  const [presets, setPresets] = useState({ countries: [], presets: {} });
+  const [presets, setPresets] = useState(FALLBACK_PRESETS);
   const [jobs, setJobs] = useState([]);
-  const [country, setCountry] = useState('');
-  const [niche, setNiche] = useState('');
+  const [country, setCountry] = useState(FALLBACK_PRESETS.countries[0]);
+  const [niche, setNiche] = useState(FALLBACK_PRESETS.presets[FALLBACK_PRESETS.countries[0]].niches[0]);
   const [location, setLocation] = useState('');
   const [sources, setSources] = useState(['google_maps']);
   const [schedule, setSchedule] = useState('');
@@ -36,8 +77,7 @@ export default function ScrapeJobs() {
   };
   useEffect(() => {
     api.scrapePresets().then((r) => {
-      setPresets(r);
-      if (r.countries?.[0]) setCountry(r.countries[0]);
+      if (r?.countries?.length) setPresets(r);
     }).catch(() => {});
     load();
     const i = setInterval(load, 4000);
@@ -46,7 +86,7 @@ export default function ScrapeJobs() {
 
   useEffect(() => {
     const niches = presets.presets?.[country]?.niches || [];
-    if (niches.length) setNiche((n) => n || niches[0]);
+    if (niches.length && !niches.includes(niche)) setNiche(niches[0]);
   }, [country, presets]);
 
   const submit = async (e) => {
