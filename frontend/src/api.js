@@ -1,4 +1,7 @@
-const BASE = import.meta.env.VITE_API_BASE_URL || '';
+// window.__API_BASE__ is injected at runtime by serve.js (standalone frontend service).
+// VITE_API_BASE_URL is baked in at build time (set this in Railway if using two separate services).
+// /api is the default for the combined single-service deployment (backend serves frontend).
+const BASE = (typeof window !== 'undefined' && window.__API_BASE__) || import.meta.env.VITE_API_BASE_URL || '/api';
 
 async function req(path, opts = {}) {
   const headers = { ...(opts.headers || {}) };

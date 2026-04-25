@@ -1,4 +1,7 @@
-# Nixpacks config for frontend (Vite static build, served via `vite preview`).
+# Nixpacks config for the standalone frontend service.
+# Set API_BASE_URL env var in Railway to point to your backend URL,
+# e.g. https://helix-backend.up.railway.app
+# serve.js injects it into index.html at runtime so no rebuild is needed.
 [phases.setup]
 nixPkgs = ["nodejs_20"]
 
@@ -6,4 +9,4 @@ nixPkgs = ["nodejs_20"]
 cmds = ["npm install", "npm run build"]
 
 [start]
-cmd = "npm run preview"
+cmd = "node serve.js"

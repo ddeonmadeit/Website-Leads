@@ -1,4 +1,5 @@
-# Nixpacks picks up package.json automatically. We add Chromium deps for Puppeteer.
+# Nixpacks config for the combined backend+frontend service.
+# Chromium apt packages are required for Puppeteer headless scraping.
 [phases.setup]
 aptPkgs = [
   "chromium",
@@ -21,7 +22,10 @@ aptPkgs = [
 ]
 
 [phases.build]
-cmds = ["npm install --omit=dev"]
+cmds = [
+  "cd ../frontend && npm install && npm run build",
+  "npm install --omit=dev"
+]
 
 [start]
 cmd = "node src/migrate.js && node src/index.js"

@@ -4,6 +4,8 @@ import cors from 'cors';
 import cookieParser from 'cookie-parser';
 import helmet from 'helmet';
 import morgan from 'morgan';
+import path from 'path';
+import { fileURLToPath } from 'url';
 
 import leadsRoutes from './routes/leads.js';
 import scrapeJobsRoutes from './routes/scrapeJobs.js';
@@ -15,13 +17,16 @@ import unsubscribeRoutes from './routes/unsubscribe.js';
 import { startJobRunner } from './jobs/runner.js';
 import { startCron } from './jobs/cron.js';
 
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
+// Resolves to the frontend/dist directory relative to backend/src/index.js
+const FRONTEND_DIST = path.resolve(__dirname, '..', '..', 'frontend', 'dist');
+
 const app = express();
 const PORT = process.env.PORT || 4000;
 
 app.set('trust proxy', 1);
 app.use(helmet({ contentSecurityPolicy: false }));
 app.use(morgan('tiny'));
-
 app.use(cors({ origin: true, credentials: true }));
 app.use(cookieParser());
 
@@ -32,15 +37,24 @@ app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true }));
 
 app.get('/healthz', (_req, res) => res.json({ ok: true }));
-
 app.use('/unsubscribe', unsubscribeRoutes);
 
-app.use('/leads', leadsRoutes);
-app.use('/scrape-jobs', scrapeJobsRoutes);
-app.use('/campaigns', campaignsRoutes);
-app.use('/sequences', sequencesRoutes);
-app.use('/stats', statsRoutes);
+// API routes — prefixed with /api so they don't conflict with React Router paths
+app.use('/api/leads', leadsRoutes);
+app.use('/api/scrape-jobs', scrapeJobsRoutes);
+app.use('/api/campaigns', campaignsRoutes);
+app.use('/api/sequences', sequencesRoutes);
+app.use('/api/stats', statsRoutes);
 
+// Serve built frontend static files (JS, CSS, images)
+app.use(express.static(FRONTEND_DIST));
+
+// SPA fallback — return index.html for all non-API paths so React Router works
+app.get('*', (_req, res) => {
+  res.sendFile(path.join(FRONTEND_DIST, 'index.html'));
+});
+
+// Error handler — must be registered last (4-arg signature)
 app.use((err, _req, res, _next) => {
   console.error('[api]', err);
   res.status(err.status || 500).json({ error: err.message || 'internal_error' });

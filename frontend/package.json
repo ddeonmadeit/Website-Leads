@@ -7,7 +7,8 @@
     "dev": "vite",
     "build": "vite build",
     "preview": "vite preview --host 0.0.0.0 --port ${PORT:-4173}",
-    "start": "vite preview --host 0.0.0.0 --port ${PORT:-4173}"
+    "start": "node serve.js",
+    "serve": "node serve.js"
   },
   "dependencies": {
     "@tiptap/extension-image": "^2.10.3",
