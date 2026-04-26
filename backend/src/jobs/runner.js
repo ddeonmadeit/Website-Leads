@@ -38,15 +38,18 @@ async function finishJob(id, count, error = null) {
 
 async function executeJob(job) {
   let count = 0;
+  const target = job.target_count || 50;
   try {
+    // Seed progress with target so the bar shows X/target right away
+    await updateProgress(job.id, 0, target, 0).catch(() => {});
     const results = await runScrape({
       country: job.country,
       niche: job.niche,
       location: job.location,
       sources: job.sources || ['google_maps'],
-      limit: 30,
+      targetCount: target,
       onProgress: ({ current, total, emails }) =>
-        updateProgress(job.id, current || 0, total || 0, emails || 0).catch(() => {}),
+        updateProgress(job.id, current || 0, total || target, emails || 0).catch(() => {}),
     });
     for (const r of results) {
       // eslint-disable-next-line no-await-in-loop

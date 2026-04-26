@@ -5,6 +5,11 @@ export const PRESETS = {
     country: 'Philippines',
     countryCode: 'PH',
     tagline: 'Best volume + easiest closes',
+    cities: [
+      'Manila', 'Quezon City', 'Makati', 'Bonifacio Global City (Taguig)',
+      'Pasig', 'Cebu City', 'Davao City', 'Iloilo City', 'Baguio',
+      'Cagayan de Oro', 'Mandaue', 'Antipolo', 'Bacolod',
+    ],
     niches: [
       { name: 'Real Estate Agencies & Brokers', tier: 1 },
       { name: 'Clinics (Dental / Aesthetic / Medical)', tier: 1 },
@@ -18,6 +23,11 @@ export const PRESETS = {
     country: 'India',
     countryCode: 'IN',
     tagline: 'Massive — bad website / no ROI market',
+    cities: [
+      'Mumbai', 'Delhi', 'Bangalore', 'Hyderabad', 'Chennai', 'Kolkata',
+      'Pune', 'Ahmedabad', 'Gurgaon', 'Noida', 'Jaipur', 'Chandigarh',
+      'Surat', 'Lucknow', 'Indore', 'Kochi',
+    ],
     niches: [
       { name: 'Coaching Institutes / Education Businesses', tier: 1 },
       { name: 'Medical Clinics / Diagnostics', tier: 1 },
@@ -31,6 +41,11 @@ export const PRESETS = {
     country: 'South Africa',
     countryCode: 'ZA',
     tagline: 'Underrated sweet spot',
+    cities: [
+      'Johannesburg', 'Cape Town', 'Durban', 'Pretoria',
+      'Port Elizabeth (Gqeberha)', 'Bloemfontein', 'East London',
+      'Polokwane', 'Stellenbosch', 'Sandton', 'Centurion',
+    ],
     niches: [
       { name: 'Law Firms', tier: 1 },
       { name: 'Security Companies', tier: 1 },
@@ -44,12 +59,16 @@ export const PRESETS = {
     country: 'UAE',
     countryCode: 'AE',
     tagline: 'Where you actually make real money',
+    cities: [
+      'Dubai', 'Abu Dhabi', 'Sharjah', 'Ajman', 'Ras Al Khaimah',
+      'Fujairah', 'Dubai Marina', 'Downtown Dubai', 'Business Bay',
+      'Jumeirah Lake Towers (JLT)', 'Deira', 'Al Barsha', 'Jumeirah',
+    ],
     niches: [
       { name: 'Real Estate Agencies', tier: 1 },
       { name: 'Luxury Clinics / Car Rentals / Concierge', tier: 1 },
       { name: 'B2B Logistics / Trade / Consulting', tier: 1 },
     ],
-    yellowPagesHost: 'yellowpages-uae.com',
   },
 };
 

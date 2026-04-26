@@ -29,16 +29,20 @@ router.get('/:id', async (req, res, next) => {
 
 router.post('/', async (req, res, next) => {
   try {
-    const { country, niche, location, sources, schedule } = req.body || {};
+    const { country, niche, location, sources, schedule, target_count } = req.body || {};
     if (!country || !niche || !location) {
       return res.status(400).json({ error: 'country_niche_location_required' });
     }
     if (!PRESETS[country]) return res.status(400).json({ error: 'unknown_country' });
+    const target = Math.max(1, Math.min(1000, Number(target_count) || 50));
     const { rows } = await query(
-      `INSERT INTO scrape_jobs (country, niche, location, sources, schedule, next_run_at, status)
-       VALUES ($1, $2, $3, $4, $5, CASE WHEN $5 IS NOT NULL THEN NOW() + INTERVAL '1 minute' ELSE NULL END, 'queued')
+      `INSERT INTO scrape_jobs
+         (country, niche, location, sources, schedule, target_count, progress_total, next_run_at, status)
+       VALUES ($1, $2, $3, $4, $5, $6, $6,
+         CASE WHEN $5 IS NOT NULL THEN NOW() + INTERVAL '1 minute' ELSE NULL END,
+         'queued')
        RETURNING *`,
-      [country, niche, location, sources || ['google_maps'], schedule || null],
+      [country, niche, location, sources || ['google_maps'], schedule || null, target],
     );
     res.status(201).json(rows[0]);
   } catch (e) { next(e); }

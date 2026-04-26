@@ -16,6 +16,7 @@ const FALLBACK_PRESETS = {
   countries: ['Philippines', 'India', 'South Africa', 'UAE'],
   presets: {
     Philippines: {
+      cities: ['Manila', 'Quezon City', 'Makati', 'Bonifacio Global City (Taguig)', 'Pasig', 'Cebu City', 'Davao City', 'Iloilo City', 'Baguio', 'Cagayan de Oro', 'Mandaue', 'Antipolo', 'Bacolod'],
       niches: [
         { name: 'Real Estate Agencies & Brokers', tier: 1 },
         { name: 'Clinics (Dental / Aesthetic / Medical)', tier: 1 },
@@ -25,6 +26,7 @@ const FALLBACK_PRESETS = {
       ],
     },
     India: {
+      cities: ['Mumbai', 'Delhi', 'Bangalore', 'Hyderabad', 'Chennai', 'Kolkata', 'Pune', 'Ahmedabad', 'Gurgaon', 'Noida', 'Jaipur', 'Chandigarh', 'Surat', 'Lucknow', 'Indore', 'Kochi'],
       niches: [
         { name: 'Coaching Institutes / Education Businesses', tier: 1 },
         { name: 'Medical Clinics / Diagnostics', tier: 1 },
@@ -34,6 +36,7 @@ const FALLBACK_PRESETS = {
       ],
     },
     'South Africa': {
+      cities: ['Johannesburg', 'Cape Town', 'Durban', 'Pretoria', 'Port Elizabeth (Gqeberha)', 'Bloemfontein', 'East London', 'Polokwane', 'Stellenbosch', 'Sandton', 'Centurion'],
       niches: [
         { name: 'Law Firms', tier: 1 },
         { name: 'Security Companies', tier: 1 },
@@ -43,6 +46,7 @@ const FALLBACK_PRESETS = {
       ],
     },
     UAE: {
+      cities: ['Dubai', 'Abu Dhabi', 'Sharjah', 'Ajman', 'Ras Al Khaimah', 'Fujairah', 'Dubai Marina', 'Downtown Dubai', 'Business Bay', 'Jumeirah Lake Towers (JLT)', 'Deira', 'Al Barsha', 'Jumeirah'],
       niches: [
         { name: 'Real Estate Agencies', tier: 1 },
         { name: 'Luxury Clinics / Car Rentals / Concierge', tier: 1 },
@@ -52,6 +56,7 @@ const FALLBACK_PRESETS = {
   },
 };
 
+const CUSTOM = '__custom__';
 const nicheName = (n) => (typeof n === 'string' ? n : n?.name);
 
 function StatusPill({ status }) {
@@ -65,9 +70,12 @@ function StatusPill({ status }) {
 export default function ScrapeJobs() {
   const [presets, setPresets] = useState(FALLBACK_PRESETS);
   const [jobs, setJobs] = useState([]);
-  const [country, setCountry] = useState(FALLBACK_PRESETS.countries[0]);
-  const [niche, setNiche] = useState(nicheName(FALLBACK_PRESETS.presets[FALLBACK_PRESETS.countries[0]].niches[0]));
-  const [location, setLocation] = useState('');
+  const initialCountry = FALLBACK_PRESETS.countries[0];
+  const [country, setCountry] = useState(initialCountry);
+  const [niche, setNiche] = useState(nicheName(FALLBACK_PRESETS.presets[initialCountry].niches[0]));
+  const [city, setCity] = useState(FALLBACK_PRESETS.presets[initialCountry].cities[0]);
+  const [customCity, setCustomCity] = useState('');
+  const [targetCount, setTargetCount] = useState(50);
   const [sources, setSources] = useState(['google_maps']);
   const [schedule, setSchedule] = useState('');
   const [busy, setBusy] = useState(false);
@@ -92,14 +100,21 @@ export default function ScrapeJobs() {
     const ns = presets.presets?.[country]?.niches || [];
     const names = ns.map(nicheName);
     if (names.length && !names.includes(niche)) setNiche(names[0]);
+    const cs = presets.presets?.[country]?.cities || [];
+    if (cs.length && city !== CUSTOM && !cs.includes(city)) setCity(cs[0]);
   }, [country, presets]);
 
   const submit = async (e) => {
     e.preventDefault();
     setBusy(true); setErr('');
+    const loc = city === CUSTOM ? customCity.trim() : city;
+    if (!loc) { setErr('Location is required'); setBusy(false); return; }
+    const tc = Math.max(1, Math.min(1000, Number(targetCount) || 50));
     try {
-      await api.createScrapeJob({ country, niche, location, sources, schedule: schedule || null });
-      setLocation('');
+      await api.createScrapeJob({
+        country, niche, location: loc, sources,
+        target_count: tc, schedule: schedule || null,
+      });
       load();
     } catch (ex) {
       setErr(ex.message);
@@ -107,11 +122,12 @@ export default function ScrapeJobs() {
   };
 
   const niches = presets.presets?.[country]?.niches || [];
+  const cities = presets.presets?.[country]?.cities || [];
 
   return (
     <Layout breadcrumb={['Leads', 'Scrape jobs']} title="Scrape jobs">
       <form onSubmit={submit} className="card mb-6">
-        <div className="grid grid-cols-1 md:grid-cols-5 gap-3">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-6 gap-3">
           <div>
             <label className="label">Country</label>
             <select className="input" value={country} onChange={(e) => setCountry(e.target.value)}>
@@ -131,8 +147,20 @@ export default function ScrapeJobs() {
             </select>
           </div>
           <div>
-            <label className="label">Location</label>
-            <input className="input" placeholder="Manila, Dubai Marina" value={location} onChange={(e) => setLocation(e.target.value)} required />
+            <label className="label">City</label>
+            <select className="input" value={city} onChange={(e) => setCity(e.target.value)}>
+              {cities.map((c) => <option key={c} value={c}>{c}</option>)}
+              <option value={CUSTOM}>Custom location…</option>
+            </select>
+            {city === CUSTOM && (
+              <input className="input mt-2" placeholder="Type a location"
+                value={customCity} onChange={(e) => setCustomCity(e.target.value)} />
+            )}
+          </div>
+          <div>
+            <label className="label">Target leads</label>
+            <input className="input" type="number" min="1" max="1000" step="10"
+              value={targetCount} onChange={(e) => setTargetCount(e.target.value)} />
           </div>
           <div>
             <label className="label">Schedule</label>
@@ -173,6 +201,7 @@ export default function ScrapeJobs() {
               <th className="th">Country</th>
               <th className="th">Niche</th>
               <th className="th">Location</th>
+              <th className="th">Target</th>
               <th className="th">Schedule</th>
               <th className="th">Status</th>
               <th className="th">Progress</th>
@@ -187,9 +216,10 @@ export default function ScrapeJobs() {
                 <td className="td">{j.country}</td>
                 <td className="td text-charcoal-300">{j.niche}</td>
                 <td className="td text-charcoal-300">{j.location}</td>
+                <td className="td text-charcoal-300">{j.target_count || 50}</td>
                 <td className="td text-charcoal-300">{j.schedule || 'one-off'}</td>
                 <td className="td"><StatusPill status={j.status} /></td>
-                <td className="td text-charcoal-300">{j.progress_current}/{j.progress_total || '?'}</td>
+                <td className="td text-charcoal-300">{j.progress_current}/{j.progress_total || j.target_count || '?'}</td>
                 <td className="td text-charcoal-300">{j.results_count} / {j.emails_found}</td>
                 <td className="td text-right">
                   {(j.status === 'queued' || j.status === 'running') && (
@@ -200,7 +230,7 @@ export default function ScrapeJobs() {
               </tr>
             ))}
             {!jobs.length && (
-              <tr><td className="td p-12 text-center text-charcoal-400" colSpan={9}>
+              <tr><td className="td p-12 text-center text-charcoal-400" colSpan={10}>
                 <I.Search className="mx-auto mb-3 opacity-50" width={32} height={32} />
                 No scrape jobs yet.
               </td></tr>

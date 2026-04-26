@@ -8,6 +8,11 @@ const PRESETS = {
   Philippines: {
     flag: '🇵🇭',
     tagline: 'Best volume + easiest closes',
+    cities: [
+      'Manila', 'Quezon City', 'Makati', 'Bonifacio Global City (Taguig)',
+      'Pasig', 'Cebu City', 'Davao City', 'Iloilo City', 'Baguio',
+      'Cagayan de Oro', 'Mandaue', 'Antipolo', 'Bacolod',
+    ],
     niches: [
       { name: 'Real Estate Agencies & Brokers', tier: 1 },
       { name: 'Clinics (Dental / Aesthetic / Medical)', tier: 1 },
@@ -19,6 +24,11 @@ const PRESETS = {
   India: {
     flag: '🇮🇳',
     tagline: 'Massive — bad website / no ROI market',
+    cities: [
+      'Mumbai', 'Delhi', 'Bangalore', 'Hyderabad', 'Chennai', 'Kolkata',
+      'Pune', 'Ahmedabad', 'Gurgaon', 'Noida', 'Jaipur', 'Chandigarh',
+      'Surat', 'Lucknow', 'Indore', 'Kochi',
+    ],
     niches: [
       { name: 'Coaching Institutes / Education Businesses', tier: 1 },
       { name: 'Medical Clinics / Diagnostics', tier: 1 },
@@ -30,6 +40,11 @@ const PRESETS = {
   'South Africa': {
     flag: '🇿🇦',
     tagline: 'Underrated sweet spot',
+    cities: [
+      'Johannesburg', 'Cape Town', 'Durban', 'Pretoria',
+      'Port Elizabeth (Gqeberha)', 'Bloemfontein', 'East London',
+      'Polokwane', 'Stellenbosch', 'Sandton', 'Centurion',
+    ],
     niches: [
       { name: 'Law Firms', tier: 1 },
       { name: 'Security Companies', tier: 1 },
@@ -41,6 +56,11 @@ const PRESETS = {
   UAE: {
     flag: '🇦🇪',
     tagline: 'Where you actually make real money',
+    cities: [
+      'Dubai', 'Abu Dhabi', 'Sharjah', 'Ajman', 'Ras Al Khaimah',
+      'Fujairah', 'Dubai Marina', 'Downtown Dubai', 'Business Bay',
+      'Jumeirah Lake Towers (JLT)', 'Deira', 'Al Barsha', 'Jumeirah',
+    ],
     niches: [
       { name: 'Real Estate Agencies', tier: 1 },
       { name: 'Luxury Clinics / Car Rentals / Concierge', tier: 1 },
@@ -48,6 +68,8 @@ const PRESETS = {
     ],
   },
 };
+
+const CUSTOM = '__custom__';
 
 const COUNTRIES = Object.keys(PRESETS);
 
@@ -187,7 +209,9 @@ function StatCard({ label, value, accent }) {
 export default function Helix() {
   const [country, setCountry] = useState(COUNTRIES[0]);
   const [niche, setNiche] = useState(PRESETS[COUNTRIES[0]].niches[0].name);
-  const [location, setLocation] = useState('');
+  const [city, setCity] = useState(PRESETS[COUNTRIES[0]].cities[0]);
+  const [customCity, setCustomCity] = useState('');
+  const [targetCount, setTargetCount] = useState(50);
   const [sources, setSources] = useState(['google_maps', 'yellow_pages']);
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState('');
@@ -219,11 +243,15 @@ export default function Helix() {
   }, []);
 
   const niches = PRESETS[country]?.niches || [];
+  const cities = PRESETS[country]?.cities || [];
 
-  // when country changes, reset niche to first
+  // when country changes, reset niche + city to defaults for that country
   useEffect(() => {
     if (niches.length && !niches.find((n) => n.name === niche)) {
       setNiche(niches[0].name);
+    }
+    if (cities.length && city !== CUSTOM && !cities.includes(city)) {
+      setCity(cities[0]);
     }
   }, [country]);
 
@@ -249,11 +277,16 @@ export default function Helix() {
   const startScrape = async (e) => {
     e?.preventDefault?.();
     setErr('');
-    if (!location.trim()) { setErr('Location is required'); return; }
+    const loc = city === CUSTOM ? customCity.trim() : city;
+    if (!loc) { setErr('Location is required'); return; }
     if (!sources.length) { setErr('Pick at least one source'); return; }
+    const tc = Math.max(1, Math.min(1000, Number(targetCount) || 50));
     setBusy(true);
     try {
-      await api.createScrapeJob({ country, niche, location, sources, schedule: null });
+      await api.createScrapeJob({
+        country, niche, location: loc, sources,
+        target_count: tc, schedule: null,
+      });
       setStartedAt(Date.now());
     } catch (ex) {
       setErr(ex.message || 'Failed to start scrape');
@@ -299,7 +332,7 @@ export default function Helix() {
             <div className="text-xs text-charcoal-500">Tier 1 = highest close rate</div>
           </div>
           <form onSubmit={startScrape} className="p-5 space-y-4">
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
               <div>
                 <label className="label">Country</label>
                 <select className="input" value={country} onChange={(e) => setCountry(e.target.value)}>
@@ -319,9 +352,25 @@ export default function Helix() {
                 </select>
               </div>
               <div>
-                <label className="label">Location</label>
-                <input className="input" placeholder="e.g. Manila, Mumbai, Cape Town, Dubai Marina"
-                  value={location} onChange={(e) => setLocation(e.target.value)} />
+                <label className="label">City</label>
+                <select className="input" value={city} onChange={(e) => setCity(e.target.value)}>
+                  {cities.map((c) => <option key={c} value={c}>{c}</option>)}
+                  <option value={CUSTOM}>Custom location…</option>
+                </select>
+                {city === CUSTOM && (
+                  <input className="input mt-2" placeholder="Type a location"
+                    value={customCity} onChange={(e) => setCustomCity(e.target.value)} />
+                )}
+              </div>
+              <div>
+                <label className="label">Target leads</label>
+                <input className="input" type="number" min="1" max="1000" step="10"
+                  value={targetCount}
+                  onChange={(e) => setTargetCount(e.target.value)}
+                  placeholder="50" />
+                <div className="text-[11px] text-charcoal-500 mt-1">
+                  Scraper will keep going until it collects this many leads (max 1000).
+                </div>
               </div>
             </div>
 

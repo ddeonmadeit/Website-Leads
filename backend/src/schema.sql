@@ -154,3 +154,6 @@ ALTER TABLE campaigns ADD COLUMN IF NOT EXISTS text_color TEXT;
 ALTER TABLE campaigns ADD COLUMN IF NOT EXISTS font_family TEXT;
 ALTER TABLE campaigns ADD COLUMN IF NOT EXISTS cta_text TEXT;
 ALTER TABLE campaigns ADD COLUMN IF NOT EXISTS cta_url TEXT;
+
+-- Scraper target count (added in v3). Drives "keep going till hit" behaviour.
+ALTER TABLE scrape_jobs ADD COLUMN IF NOT EXISTS target_count INTEGER NOT NULL DEFAULT 50;
