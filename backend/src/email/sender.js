@@ -218,15 +218,16 @@ export async function startEmailLoop() {
 
 export function stopEmailLoop() { loopRunning = false; }
 
-// Used by sequences to send a single one-off message without a campaigns row.
+// Used by sequences and one-off lead sends to deliver a single message
+// without creating a campaigns row.
 export async function sendDirectEmail({
-  lead, subject, bodyHtml, bodyText, fromName, fromEmail, replyTo,
+  lead, subject, bodyHtml, bodyText, fromName, fromEmail, replyTo, branding,
 }) {
   const resend = getResend();
   if (!resend) throw new Error('resend_not_configured');
   if (!lead.email || await isBlockedEmail(lead.email)) return { skipped: true };
   const { subject: subj, html, text } = personalize({
-    subject, bodyHtml, bodyText, lead,
+    subject, bodyHtml, bodyText, lead, branding,
   });
   const from = `${fromName} <${fromEmail}>`;
   const headers = {
@@ -246,7 +247,7 @@ export async function sendDirectEmail({
   await query(
     `INSERT INTO email_events (lead_id, event_type, resend_message_id, payload)
      VALUES ($1, 'sent', $2, $3::jsonb)`,
-    [lead.id, id, JSON.stringify({ subject: subj, source: 'sequence' })],
+    [lead.id, id, JSON.stringify({ subject: subj, source: 'direct' })],
   );
   return { ok: true, id };
 }

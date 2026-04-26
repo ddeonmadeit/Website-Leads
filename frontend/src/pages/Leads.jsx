@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { api } from '../api.js';
 import Layout from '../components/Layout.jsx';
+import SendEmailModal from '../components/SendEmailModal.jsx';
 import { I } from '../components/Icons.jsx';
 
 const COUNTRIES = ['Philippines', 'India', 'South Africa', 'UAE'];
@@ -35,6 +36,7 @@ export default function Leads() {
   const [selected, setSelected] = useState(new Set());
   const [busy, setBusy] = useState(false);
   const [importMsg, setImportMsg] = useState('');
+  const [sendingTo, setSendingTo] = useState(null);
   const fileRef = useRef();
 
   const params = useMemo(() => {
@@ -206,6 +208,7 @@ export default function Leads() {
               <th className="th">Website</th>
               <th className="th">Email status</th>
               <th className="th">Tags</th>
+              <th className="th"></th>
             </tr>
           </thead>
           <tbody>
@@ -230,10 +233,21 @@ export default function Leads() {
                     {(r.tags || []).map((t) => <span key={t} className="chip">{t}</span>)}
                   </div>
                 </td>
+                <td className="td text-right whitespace-nowrap">
+                  <button
+                    type="button"
+                    className="btn-ghost"
+                    title={r.email ? 'Send a one-off email' : 'No email on file'}
+                    disabled={!r.email}
+                    onClick={() => setSendingTo(r)}
+                  >
+                    <I.Send /> <span className="hidden md:inline">Send</span>
+                  </button>
+                </td>
               </tr>
             ))}
             {!data.rows.length && (
-              <tr><td className="td p-12 text-center text-charcoal-400" colSpan={10}>
+              <tr><td className="td p-12 text-center text-charcoal-400" colSpan={11}>
                 <I.Inbox className="mx-auto mb-3 opacity-50" width={32} height={32} />
                 No leads yet — run a scrape job to get started.
               </td></tr>
@@ -248,6 +262,14 @@ export default function Leads() {
         <button className="btn-secondary" disabled={(page + 1) * pageSize >= data.total} onClick={() => setPage((p) => p + 1)}>Next</button>
         {busy && <span className="text-xs text-charcoal-500 ml-2">Loading…</span>}
       </div>
+
+      {sendingTo && (
+        <SendEmailModal
+          lead={sendingTo}
+          onClose={() => setSendingTo(null)}
+          onSent={() => load()}
+        />
+      )}
     </Layout>
   );
 }

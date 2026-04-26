@@ -4,6 +4,7 @@ import {
   listLeads, getLead, updateLead, deleteLeads, bulkAssignTag, insertLead, idsFromFilter,
 } from '../leadsModel.js';
 import { parseCsv, stringifyCsv } from '../utils/csv.js';
+import { sendDirectEmail } from '../email/sender.js';
 
 const router = Router();
 const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 20 * 1024 * 1024 } });
@@ -112,6 +113,41 @@ router.post('/bulk/resolve-filter', async (req, res, next) => {
   try {
     const ids = await idsFromFilter(req.body || {});
     res.json({ ids });
+  } catch (e) { next(e); }
+});
+
+// Send a one-off email to a single lead (no campaign row).
+router.post('/:id/send-email', async (req, res, next) => {
+  try {
+    const lead = await getLead(Number(req.params.id));
+    if (!lead) return res.status(404).json({ error: 'lead_not_found' });
+    if (!lead.email) return res.status(400).json({ error: 'lead_has_no_email' });
+
+    const b = req.body || {};
+    if (!b.subject || !b.body_html || !b.from_name || !b.from_email) {
+      return res.status(400).json({ error: 'missing_required_fields' });
+    }
+
+    const result = await sendDirectEmail({
+      lead,
+      subject: b.subject,
+      bodyHtml: b.body_html,
+      bodyText: b.body_text,
+      fromName: b.from_name,
+      fromEmail: b.from_email,
+      replyTo: b.reply_to,
+      branding: {
+        logo_url: b.logo_url,
+        brand_color: b.brand_color,
+        bg_color: b.bg_color,
+        text_color: b.text_color,
+        font_family: b.font_family,
+        cta_text: b.cta_text,
+        cta_url: b.cta_url,
+      },
+    });
+    if (result?.skipped) return res.status(400).json({ error: 'lead_blocked_or_unsubscribed' });
+    res.json(result);
   } catch (e) { next(e); }
 });
 

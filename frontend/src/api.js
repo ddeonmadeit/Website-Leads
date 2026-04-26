@@ -37,6 +37,7 @@ export const api = {
   bulkDelete: (ids) => req('/leads/bulk/delete', { method: 'POST', body: { ids } }),
   bulkTag: (ids, tag) => req('/leads/bulk/tag', { method: 'POST', body: { ids, tag } }),
   resolveFilter: (filter) => req('/leads/bulk/resolve-filter', { method: 'POST', body: filter }),
+  sendLeadEmail: (id, payload) => req(`/leads/${id}/send-email`, { method: 'POST', body: payload }),
   importLeads: (file) => {
     const fd = new FormData();
     fd.append('file', file);
