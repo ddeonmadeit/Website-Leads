@@ -398,21 +398,23 @@ export default function Helix() {
               <table className="min-w-full text-sm">
                 <thead className="sticky top-0 bg-charcoal-850">
                   <tr className="border-b border-charcoal-800 text-left">
-                    <th className="th">Email</th>
                     <th className="th">Business</th>
-                    <th className="th">Source</th>
+                    <th className="th">Email</th>
+                    <th className="th">Phone</th>
+                    <th className="th hidden sm:table-cell">Source</th>
                   </tr>
                 </thead>
                 <tbody>
                   {leads.slice(0, 20).map((l) => (
                     <tr key={l.id} className="border-b border-charcoal-800/60">
-                      <td className="td truncate max-w-[180px]" title={l.email}>{l.email || '—'}</td>
-                      <td className="td truncate max-w-[160px] text-charcoal-300" title={l.business_name}>{l.business_name}</td>
-                      <td className="td text-xs text-charcoal-400">{l.source || '—'}</td>
+                      <td className="td truncate max-w-[160px] text-charcoal-100" title={l.business_name}>{l.business_name || '—'}</td>
+                      <td className="td truncate max-w-[180px] text-charcoal-300" title={l.email}>{l.email || '—'}</td>
+                      <td className="td whitespace-nowrap text-charcoal-300">{l.phone || '—'}</td>
+                      <td className="td text-xs text-charcoal-400 hidden sm:table-cell">{l.source || '—'}</td>
                     </tr>
                   ))}
                   {!leads.length && (
-                    <tr><td colSpan={3} className="td text-center text-charcoal-500 py-8">
+                    <tr><td colSpan={4} className="td text-center text-charcoal-500 py-8">
                       <I.Users className="mx-auto mb-2 opacity-50" />
                       No leads yet
                     </td></tr>
