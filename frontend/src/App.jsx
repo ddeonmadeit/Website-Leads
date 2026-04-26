@@ -1,4 +1,5 @@
 import { Routes, Route } from 'react-router-dom';
+import Helix from './pages/Helix.jsx';
 import Dashboard from './pages/Dashboard.jsx';
 import Leads from './pages/Leads.jsx';
 import ScrapeJobs from './pages/ScrapeJobs.jsx';
@@ -10,7 +11,8 @@ import SequenceBuilder from './pages/SequenceBuilder.jsx';
 export default function App() {
   return (
     <Routes>
-      <Route path="/" element={<Dashboard />} />
+      <Route path="/" element={<Helix />} />
+      <Route path="/dashboard" element={<Dashboard />} />
       <Route path="/leads" element={<Leads />} />
       <Route path="/scrape" element={<ScrapeJobs />} />
       <Route path="/campaigns" element={<Campaigns />} />

@@ -11,44 +11,48 @@ const SOURCES = [
 
 // Fallback presets — keep in sync with backend/src/scraper/presets.js so the
 // dropdowns are populated even if the /presets request hasn't returned yet.
+// Niches are objects { name, tier } where tier 1 = highest close rate.
 const FALLBACK_PRESETS = {
   countries: ['Philippines', 'India', 'South Africa', 'UAE'],
   presets: {
     Philippines: {
       niches: [
-        'Real Estate Agencies & Brokers',
-        'Dental / Aesthetic / Medical Clinics',
-        'Construction / Contractors',
-        'Resorts / Boutique Hotels',
-        'Logistics / Freight / Export',
+        { name: 'Real Estate Agencies & Brokers', tier: 1 },
+        { name: 'Clinics (Dental / Aesthetic / Medical)', tier: 1 },
+        { name: 'Construction / Contractors', tier: 1 },
+        { name: 'Resorts / Boutique Hotels', tier: 2 },
+        { name: 'Logistics / Freight / Export', tier: 2 },
       ],
     },
     India: {
       niches: [
-        'Coaching Institutes / Education Businesses',
-        'Medical Clinics / Diagnostics',
-        'Real Estate Developers / Brokers',
-        'Recruitment / Staffing Agencies',
+        { name: 'Coaching Institutes / Education Businesses', tier: 1 },
+        { name: 'Medical Clinics / Diagnostics', tier: 1 },
+        { name: 'Real Estate Developers / Brokers', tier: 1 },
+        { name: 'D2C Brands (Shopify Sellers / CRO)', tier: 2 },
+        { name: 'Recruitment / Staffing Agencies', tier: 2 },
       ],
     },
     'South Africa': {
       niches: [
-        'Law Firms',
-        'Security Companies',
-        'Construction & Engineering',
-        'Accounting Firms',
-        'Insurance Brokers',
+        { name: 'Law Firms', tier: 1 },
+        { name: 'Security Companies', tier: 1 },
+        { name: 'Construction & Engineering', tier: 1 },
+        { name: 'Accounting Firms', tier: 2 },
+        { name: 'Insurance Brokers', tier: 2 },
       ],
     },
     UAE: {
       niches: [
-        'Real Estate Agencies',
-        'Luxury Clinics / Car Rentals / Concierge',
-        'B2B Logistics / Trade / Consulting',
+        { name: 'Real Estate Agencies', tier: 1 },
+        { name: 'Luxury Clinics / Car Rentals / Concierge', tier: 1 },
+        { name: 'B2B Logistics / Trade / Consulting', tier: 1 },
       ],
     },
   },
 };
+
+const nicheName = (n) => (typeof n === 'string' ? n : n?.name);
 
 function StatusPill({ status }) {
   const map = {
@@ -62,7 +66,7 @@ export default function ScrapeJobs() {
   const [presets, setPresets] = useState(FALLBACK_PRESETS);
   const [jobs, setJobs] = useState([]);
   const [country, setCountry] = useState(FALLBACK_PRESETS.countries[0]);
-  const [niche, setNiche] = useState(FALLBACK_PRESETS.presets[FALLBACK_PRESETS.countries[0]].niches[0]);
+  const [niche, setNiche] = useState(nicheName(FALLBACK_PRESETS.presets[FALLBACK_PRESETS.countries[0]].niches[0]));
   const [location, setLocation] = useState('');
   const [sources, setSources] = useState(['google_maps']);
   const [schedule, setSchedule] = useState('');
@@ -85,8 +89,9 @@ export default function ScrapeJobs() {
   }, []);
 
   useEffect(() => {
-    const niches = presets.presets?.[country]?.niches || [];
-    if (niches.length && !niches.includes(niche)) setNiche(niches[0]);
+    const ns = presets.presets?.[country]?.niches || [];
+    const names = ns.map(nicheName);
+    if (names.length && !names.includes(niche)) setNiche(names[0]);
   }, [country, presets]);
 
   const submit = async (e) => {
@@ -116,7 +121,13 @@ export default function ScrapeJobs() {
           <div>
             <label className="label">Niche</label>
             <select className="input" value={niche} onChange={(e) => setNiche(e.target.value)}>
-              {niches.map((n) => <option key={n}>{n}</option>)}
+              {niches.map((n) => {
+                const name = nicheName(n);
+                const tier = typeof n === 'object' ? n.tier : null;
+                return (
+                  <option key={name} value={name}>{tier === 1 ? '★ ' : ''}{name}</option>
+                );
+              })}
             </select>
           </div>
           <div>
