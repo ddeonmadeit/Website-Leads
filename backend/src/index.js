@@ -14,7 +14,7 @@ import sequencesRoutes from './routes/sequences.js';
 import webhooksRoutes from './routes/webhooks.js';
 import statsRoutes from './routes/stats.js';
 import unsubscribeRoutes from './routes/unsubscribe.js';
-import { startJobRunner } from './jobs/runner.js';
+import { startJobRunner, reclaimOrphanedJobs } from './jobs/runner.js';
 import { startCron } from './jobs/cron.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
@@ -60,8 +60,12 @@ app.use((err, _req, res, _next) => {
   res.status(err.status || 500).json({ error: err.message || 'internal_error' });
 });
 
-app.listen(PORT, () => {
+app.listen(PORT, async () => {
   console.log(`[api] listening on ${PORT}`);
+  // Reclaim any scrape job left in 'running' by a previous container so it
+  // resumes instead of being orphaned. Campaigns naturally resume because the
+  // email loop already picks up rows still marked 'sending'.
+  await reclaimOrphanedJobs().catch((e) => console.error('[jobs] reclaim failed', e));
   startJobRunner().catch((e) => console.error('[jobs] runner failed', e));
   startCron();
 });

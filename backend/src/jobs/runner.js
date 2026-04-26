@@ -96,3 +96,14 @@ export async function startJobRunner() {
 }
 
 export function stopJobRunner() { running = false; }
+
+// Reset jobs that were 'running' when the previous container died so the
+// runner picks them up again instead of leaving them orphaned forever.
+export async function reclaimOrphanedJobs() {
+  const { rowCount } = await query(
+    `UPDATE scrape_jobs
+       SET status = 'queued', started_at = NULL, progress_current = 0, error = NULL
+     WHERE status = 'running'`,
+  );
+  if (rowCount > 0) console.log(`[jobs] reclaimed ${rowCount} orphaned running job(s)`);
+}
