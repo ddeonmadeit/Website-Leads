@@ -21,6 +21,9 @@ export default function CampaignBuilder() {
     name: '', from_name: '', from_email: '', reply_to: '',
     subject: '', body_html: DEFAULT_BODY, body_text: '',
     hourly_limit: 50, batch_delay_ms: 2000, scheduled_at: '',
+    logo_url: '', brand_color: '#ff6b1a', bg_color: '#f4f4f5',
+    text_color: '#222222', font_family: 'Arial, Helvetica, sans-serif',
+    cta_text: '', cta_url: '',
   });
   const [savedId, setSavedId] = useState(id ? Number(id) : null);
   const [recipientCount, setRecipientCount] = useState(0);
@@ -45,6 +48,13 @@ export default function CampaignBuilder() {
           hourly_limit: campaign.hourly_limit || 50,
           batch_delay_ms: campaign.batch_delay_ms || 2000,
           scheduled_at: campaign.scheduled_at ? new Date(campaign.scheduled_at).toISOString().slice(0, 16) : '',
+          logo_url: campaign.logo_url || '',
+          brand_color: campaign.brand_color || '#ff6b1a',
+          bg_color: campaign.bg_color || '#f4f4f5',
+          text_color: campaign.text_color || '#222222',
+          font_family: campaign.font_family || 'Arial, Helvetica, sans-serif',
+          cta_text: campaign.cta_text || '',
+          cta_url: campaign.cta_url || '',
         }));
         setRecipientCount(recipients?.length || 0);
       });
@@ -163,6 +173,77 @@ export default function CampaignBuilder() {
           </div>
 
           <div className="card">
+            <div className="font-semibold text-charcoal-100 mb-3">Branding</div>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+              <div className="md:col-span-2">
+                <label className="label">Logo URL (https://…)</label>
+                <input className="input" type="url" placeholder="https://yourcdn.com/logo.png"
+                  value={form.logo_url} onChange={(e) => set('logo_url', e.target.value)} />
+                {form.logo_url && (
+                  <div className="mt-2 inline-block p-2 bg-charcoal-800 rounded">
+                    <img src={form.logo_url} alt="" className="max-h-10" onError={(e) => { e.target.style.display = 'none'; }} />
+                  </div>
+                )}
+              </div>
+              <div>
+                <label className="label">Brand colour (header + button)</label>
+                <div className="flex items-center gap-2">
+                  <input type="color" className="h-10 w-12 rounded cursor-pointer border border-charcoal-700 bg-charcoal-850"
+                    value={form.brand_color} onChange={(e) => set('brand_color', e.target.value)} />
+                  <input className="input flex-1 font-mono text-xs" value={form.brand_color}
+                    onChange={(e) => set('brand_color', e.target.value)} />
+                </div>
+              </div>
+              <div>
+                <label className="label">Background colour</label>
+                <div className="flex items-center gap-2">
+                  <input type="color" className="h-10 w-12 rounded cursor-pointer border border-charcoal-700 bg-charcoal-850"
+                    value={form.bg_color} onChange={(e) => set('bg_color', e.target.value)} />
+                  <input className="input flex-1 font-mono text-xs" value={form.bg_color}
+                    onChange={(e) => set('bg_color', e.target.value)} />
+                </div>
+              </div>
+              <div>
+                <label className="label">Text colour</label>
+                <div className="flex items-center gap-2">
+                  <input type="color" className="h-10 w-12 rounded cursor-pointer border border-charcoal-700 bg-charcoal-850"
+                    value={form.text_color} onChange={(e) => set('text_color', e.target.value)} />
+                  <input className="input flex-1 font-mono text-xs" value={form.text_color}
+                    onChange={(e) => set('text_color', e.target.value)} />
+                </div>
+              </div>
+              <div>
+                <label className="label">Font</label>
+                <select className="input" value={form.font_family} onChange={(e) => set('font_family', e.target.value)}>
+                  <option value="Arial, Helvetica, sans-serif">Arial / Helvetica</option>
+                  <option value="'Helvetica Neue', Helvetica, Arial, sans-serif">Helvetica Neue</option>
+                  <option value="Georgia, 'Times New Roman', serif">Georgia (serif)</option>
+                  <option value="'Courier New', Courier, monospace">Courier (mono)</option>
+                  <option value="Verdana, Geneva, sans-serif">Verdana</option>
+                  <option value="Tahoma, Geneva, sans-serif">Tahoma</option>
+                  <option value="'Trebuchet MS', sans-serif">Trebuchet MS</option>
+                  <option value="-apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif">System UI</option>
+                </select>
+              </div>
+              <div className="md:col-span-2 pt-2 border-t border-charcoal-800 mt-2">
+                <div className="text-xs uppercase tracking-wider text-charcoal-400 mb-2">Call-to-action button (optional)</div>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                  <div>
+                    <label className="label">Button text</label>
+                    <input className="input" placeholder="Book a free call"
+                      value={form.cta_text} onChange={(e) => set('cta_text', e.target.value)} />
+                  </div>
+                  <div>
+                    <label className="label">Button URL</label>
+                    <input className="input" type="url" placeholder="https://cal.com/you"
+                      value={form.cta_url} onChange={(e) => set('cta_url', e.target.value)} />
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div className="card">
             <div className="font-semibold text-charcoal-100 mb-3">Sending settings</div>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
               <div>
@@ -222,7 +303,21 @@ export default function CampaignBuilder() {
         </div>
 
         <div>
-          <EmailPreview subject={form.subject} html={form.body_html} text={form.body_text} />
+          <EmailPreview
+            subject={form.subject}
+            html={form.body_html}
+            text={form.body_text}
+            from={`${form.from_name || 'Your Name'} <${form.from_email || 'you@yourdomain.com'}>`}
+            branding={{
+              logo_url: form.logo_url,
+              brand_color: form.brand_color,
+              bg_color: form.bg_color,
+              text_color: form.text_color,
+              font_family: form.font_family,
+              cta_text: form.cta_text,
+              cta_url: form.cta_url,
+            }}
+          />
         </div>
       </div>
     </Layout>

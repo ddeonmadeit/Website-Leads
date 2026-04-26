@@ -74,6 +74,107 @@ function StatusDot({ status }) {
   return <span className={`inline-block h-2 w-2 rounded-full ${map[status] || 'bg-charcoal-500'}`} />;
 }
 
+const NAV_GROUPS = [
+  {
+    label: 'Leads',
+    items: [
+      { to: '/leads', label: 'All leads' },
+      { to: '/scrape', label: 'Scrape jobs' },
+    ],
+  },
+  {
+    label: 'Outreach',
+    items: [
+      { to: '/campaigns', label: 'Campaigns' },
+      { to: '/sequences', label: 'Sequences' },
+    ],
+  },
+];
+
+function HelixHeader({ status, progress }) {
+  const [open, setOpen] = useState(false);
+  return (
+    <header className="border-b border-charcoal-800 bg-charcoal-875 sticky top-0 z-20 backdrop-blur">
+      <div className="max-w-6xl mx-auto px-4 md:px-6 h-14 flex items-center gap-3">
+        <div className="h-8 w-8 rounded-lg bg-brand-500 flex items-center justify-center text-white font-bold shrink-0">H</div>
+        <div className="font-semibold tracking-tight truncate">Helix Outreach</div>
+
+        <div className="ml-auto flex items-center gap-2 md:gap-4 text-sm">
+          <div className="flex items-center gap-2 px-2 md:px-3 py-1.5 rounded-md bg-charcoal-850 border border-charcoal-800">
+            <StatusDot status={status} />
+            <span className="capitalize text-charcoal-200 hidden sm:inline">{status}</span>
+            <span className="text-charcoal-500 hidden sm:inline">•</span>
+            <span className="text-charcoal-300 text-xs">{progress}</span>
+          </div>
+
+          {/* Desktop nav */}
+          <nav className="hidden md:flex items-center gap-4">
+            {NAV_GROUPS.map((g) => (
+              <div key={g.label} className="relative group">
+                <button className="text-charcoal-300 hover:text-brand-400 text-sm flex items-center gap-1">
+                  {g.label}
+                  <svg width="10" height="10" viewBox="0 0 12 12" fill="currentColor"><path d="M6 9L1 4h10z"/></svg>
+                </button>
+                <div className="absolute right-0 top-full pt-2 hidden group-hover:block min-w-[160px]">
+                  <div className="rounded-lg border border-charcoal-800 bg-charcoal-875 shadow-lg py-1">
+                    {g.items.map((it) => (
+                      <Link key={it.to} to={it.to}
+                        className="block px-3 py-2 text-sm text-charcoal-300 hover:bg-charcoal-800 hover:text-brand-300">
+                        {it.label}
+                      </Link>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            ))}
+          </nav>
+
+          {/* Mobile burger */}
+          <button type="button" className="md:hidden btn-icon" onClick={() => setOpen(true)} aria-label="Open menu">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+              <line x1="3" y1="6" x2="21" y2="6" />
+              <line x1="3" y1="12" x2="21" y2="12" />
+              <line x1="3" y1="18" x2="21" y2="18" />
+            </svg>
+          </button>
+        </div>
+      </div>
+
+      {/* Mobile drawer */}
+      {open && (
+        <div className="fixed inset-0 z-30 md:hidden" onClick={() => setOpen(false)}>
+          <div className="absolute inset-0 bg-black/60" />
+          <div
+            className="absolute right-0 top-0 bottom-0 w-72 bg-charcoal-875 border-l border-charcoal-800 p-5 overflow-y-auto"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-center justify-between mb-4">
+              <div className="font-semibold text-charcoal-100">Menu</div>
+              <button type="button" className="btn-icon" onClick={() => setOpen(false)} aria-label="Close menu">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+                  <line x1="6" y1="6" x2="18" y2="18" />
+                  <line x1="18" y1="6" x2="6" y2="18" />
+                </svg>
+              </button>
+            </div>
+            {NAV_GROUPS.map((g) => (
+              <div key={g.label} className="mb-4">
+                <div className="text-[11px] uppercase tracking-wider text-charcoal-500 mb-1.5">{g.label}</div>
+                {g.items.map((it) => (
+                  <Link key={it.to} to={it.to} onClick={() => setOpen(false)}
+                    className="block px-3 py-2 rounded-lg text-charcoal-200 hover:bg-charcoal-800">
+                    {it.label}
+                  </Link>
+                ))}
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+    </header>
+  );
+}
+
 function StatCard({ label, value, accent }) {
   return (
     <div className="rounded-xl border border-charcoal-800 bg-charcoal-850 p-4">
@@ -176,25 +277,9 @@ export default function Helix() {
   return (
     <div className="min-h-screen bg-charcoal-900 text-charcoal-100">
       {/* Header */}
-      <header className="border-b border-charcoal-800 bg-charcoal-875 sticky top-0 z-10 backdrop-blur">
-        <div className="max-w-6xl mx-auto px-6 h-14 flex items-center gap-3">
-          <div className="h-8 w-8 rounded-lg bg-brand-500 flex items-center justify-center text-white font-bold">H</div>
-          <div className="font-semibold tracking-tight">Helix Outreach</div>
-          <div className="ml-auto flex items-center gap-3 text-sm">
-            <div className="flex items-center gap-2 px-3 py-1.5 rounded-md bg-charcoal-850 border border-charcoal-800">
-              <StatusDot status={status} />
-              <span className="capitalize text-charcoal-200">{status}</span>
-              <span className="text-charcoal-500">•</span>
-              <span className="text-charcoal-300">{progress}</span>
-            </div>
-            <Link to="/leads" className="text-charcoal-400 hover:text-brand-400 text-sm">Leads</Link>
-            <Link to="/campaigns" className="text-charcoal-400 hover:text-brand-400 text-sm">Campaigns</Link>
-            <Link to="/sequences" className="text-charcoal-400 hover:text-brand-400 text-sm">Sequences</Link>
-          </div>
-        </div>
-      </header>
+      <HelixHeader status={status} progress={progress} />
 
-      <main className="max-w-6xl mx-auto px-6 py-6 space-y-6">
+      <main className="max-w-6xl mx-auto px-4 md:px-6 py-4 md:py-6 space-y-4 md:space-y-6">
         {/* Stats */}
         <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
           <StatCard label="Leads Found" value={(stats?.leads?.total || 0).toLocaleString()} accent="text-brand-400" />

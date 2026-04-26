@@ -1,6 +1,7 @@
 import { query, tx } from '../db.js';
 import { getResend } from './resendClient.js';
 import { htmlToText, renderMergeTags } from '../utils/html.js';
+import { wrapBranded, hasAnyBranding } from './template.js';
 import {
   appendUnsubscribeFooterHtml, appendUnsubscribeFooterText, unsubscribeUrl,
 } from './unsubscribe.js';
@@ -31,14 +32,16 @@ function mergeData(lead) {
   };
 }
 
-export function personalize({ subject, bodyHtml, bodyText, lead }) {
+export function personalize({ subject, bodyHtml, bodyText, lead, branding }) {
   const data = mergeData(lead);
   const subj = renderMergeTags(subject, data);
-  const html = renderMergeTags(bodyHtml, data);
-  const textBase = bodyText ? renderMergeTags(bodyText, data) : htmlToText(html);
+  let inner = renderMergeTags(bodyHtml, data);
+  inner = appendUnsubscribeFooterHtml(inner, lead.email);
+  const html = hasAnyBranding(branding) ? wrapBranded(inner, branding) : inner;
+  const textBase = bodyText ? renderMergeTags(bodyText, data) : htmlToText(bodyHtml);
   return {
     subject: subj,
-    html: appendUnsubscribeFooterHtml(html, lead.email),
+    html,
     text: appendUnsubscribeFooterText(textBase, lead.email),
   };
 }
@@ -58,6 +61,15 @@ async function sendOne({ campaign, recipient, lead }) {
     bodyHtml: campaign.body_html,
     bodyText: campaign.body_text,
     lead,
+    branding: {
+      logo_url: campaign.logo_url,
+      brand_color: campaign.brand_color,
+      bg_color: campaign.bg_color,
+      text_color: campaign.text_color,
+      font_family: campaign.font_family,
+      cta_text: campaign.cta_text,
+      cta_url: campaign.cta_url,
+    },
   });
 
   const from = `${campaign.from_name} <${campaign.from_email}>`;

@@ -44,7 +44,10 @@ router.post('/spam-check', (req, res) => {
 
 router.post('/preview', async (req, res, next) => {
   try {
-    const { subject, body_html, body_text, lead_id } = req.body || {};
+    const {
+      subject, body_html, body_text, lead_id,
+      logo_url, brand_color, bg_color, text_color, font_family, cta_text, cta_url,
+    } = req.body || {};
     let lead = {
       business_name: 'Acme Clinic', city: 'Manila', country: 'Philippines',
       category: 'Dental Clinic', email: 'sample@example.com', phone: '+63 2 123 4567',
@@ -53,7 +56,10 @@ router.post('/preview', async (req, res, next) => {
       const { rows } = await query('SELECT * FROM leads WHERE id = $1', [lead_id]);
       if (rows[0]) lead = rows[0];
     }
-    const result = personalize({ subject, bodyHtml: body_html, bodyText: body_text, lead });
+    const result = personalize({
+      subject, bodyHtml: body_html, bodyText: body_text, lead,
+      branding: { logo_url, brand_color, bg_color, text_color, font_family, cta_text, cta_url },
+    });
     res.json(result);
   } catch (e) { next(e); }
 });
@@ -67,8 +73,9 @@ router.post('/', async (req, res, next) => {
     const { rows } = await query(
       `INSERT INTO campaigns
          (name, from_name, from_email, reply_to, subject, body_html, body_text,
-          hourly_limit, batch_delay_ms, scheduled_at, status, lead_filter)
-       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12)
+          hourly_limit, batch_delay_ms, scheduled_at, status, lead_filter,
+          logo_url, brand_color, bg_color, text_color, font_family, cta_text, cta_url)
+       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19)
        RETURNING *`,
       [
         b.name, b.from_name, b.from_email, b.reply_to || null,
@@ -78,6 +85,8 @@ router.post('/', async (req, res, next) => {
         b.scheduled_at || null,
         'draft',
         JSON.stringify(b.lead_filter || {}),
+        b.logo_url || null, b.brand_color || null, b.bg_color || null,
+        b.text_color || null, b.font_family || null, b.cta_text || null, b.cta_url || null,
       ],
     );
     res.status(201).json(rows[0]);
@@ -86,7 +95,11 @@ router.post('/', async (req, res, next) => {
 
 router.patch('/:id', async (req, res, next) => {
   try {
-    const allowed = ['name', 'from_name', 'from_email', 'reply_to', 'subject', 'body_html', 'body_text', 'hourly_limit', 'batch_delay_ms', 'scheduled_at'];
+    const allowed = [
+      'name', 'from_name', 'from_email', 'reply_to', 'subject', 'body_html', 'body_text',
+      'hourly_limit', 'batch_delay_ms', 'scheduled_at',
+      'logo_url', 'brand_color', 'bg_color', 'text_color', 'font_family', 'cta_text', 'cta_url',
+    ];
     const sets = []; const params = [];
     for (const k of allowed) {
       if (k in req.body) { params.push(req.body[k]); sets.push(`${k} = $${params.length}`); }

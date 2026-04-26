@@ -145,3 +145,12 @@ CREATE TABLE IF NOT EXISTS sequence_enrollments (
 );
 
 CREATE INDEX IF NOT EXISTS idx_enrollments_active ON sequence_enrollments(status, sequence_id);
+
+-- Email branding (added in v2). ALTER + IF NOT EXISTS makes this idempotent.
+ALTER TABLE campaigns ADD COLUMN IF NOT EXISTS logo_url TEXT;
+ALTER TABLE campaigns ADD COLUMN IF NOT EXISTS brand_color TEXT;
+ALTER TABLE campaigns ADD COLUMN IF NOT EXISTS bg_color TEXT;
+ALTER TABLE campaigns ADD COLUMN IF NOT EXISTS text_color TEXT;
+ALTER TABLE campaigns ADD COLUMN IF NOT EXISTS font_family TEXT;
+ALTER TABLE campaigns ADD COLUMN IF NOT EXISTS cta_text TEXT;
+ALTER TABLE campaigns ADD COLUMN IF NOT EXISTS cta_url TEXT;
