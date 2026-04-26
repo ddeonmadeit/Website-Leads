@@ -364,12 +364,21 @@ export default function Helix() {
               </div>
               <div>
                 <label className="label">Target leads</label>
-                <input className="input" type="number" min="1" max="1000" step="10"
+                <select
+                  className="input"
                   value={targetCount}
-                  onChange={(e) => setTargetCount(e.target.value)}
-                  placeholder="50" />
+                  onChange={(e) => setTargetCount(Number(e.target.value))}
+                >
+                  <option value={10}>10 leads</option>
+                  <option value={25}>25 leads</option>
+                  <option value={50}>50 leads</option>
+                  <option value={100}>100 leads</option>
+                  <option value={200}>200 leads</option>
+                  <option value={500}>500 leads</option>
+                  <option value={1000}>1000 leads (max)</option>
+                </select>
                 <div className="text-[11px] text-charcoal-500 mt-1">
-                  Scraper will keep going until it collects this many leads (max 1000).
+                  Scraper keeps going until it hits this many qualified leads.
                 </div>
               </div>
             </div>
