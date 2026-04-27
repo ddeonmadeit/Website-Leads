@@ -40,7 +40,7 @@ export async function getBrowser() {
   if (!browserPromise) {
     const executablePath = getExecutablePath();
     console.log('[scraper] launching browser…');
-    browserPromise = puppeteer.launch({
+    const launchPromise = puppeteer.launch({
       headless: process.env.PUPPETEER_HEADLESS !== 'false',
       executablePath,
       args: [
@@ -53,14 +53,20 @@ export async function getBrowser() {
         '--mute-audio',
         `--user-agent=${process.env.SCRAPER_USER_AGENT || 'Mozilla/5.0'}`,
       ],
-    }).then((b) => {
-      console.log('[scraper] browser launched');
-      return b;
-    }).catch((err) => {
-      console.error('[scraper] browser launch failed:', err.message);
-      browserPromise = null; // allow retry on next call
-      throw err;
     });
+    const timeoutPromise = new Promise((_, reject) =>
+      setTimeout(() => reject(new Error('Browser launch timed out after 30s')), 30000),
+    );
+    browserPromise = Promise.race([launchPromise, timeoutPromise])
+      .then((b) => {
+        console.log('[scraper] browser launched');
+        return b;
+      })
+      .catch((err) => {
+        console.error('[scraper] browser launch failed:', err.message);
+        browserPromise = null;
+        throw err;
+      });
   }
   return browserPromise;
 }

@@ -31,4 +31,4 @@ cmds = [
 cmd = "node src/migrate.js && node src/index.js"
 
 [variables]
-PUPPETEER_SKIP_DOWNLOAD = "false"
+PUPPETEER_SKIP_DOWNLOAD = "true"

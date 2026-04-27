@@ -14,7 +14,7 @@ import sequencesRoutes from './routes/sequences.js';
 import webhooksRoutes from './routes/webhooks.js';
 import statsRoutes from './routes/stats.js';
 import unsubscribeRoutes from './routes/unsubscribe.js';
-import { startJobRunner, reclaimOrphanedJobs } from './jobs/runner.js';
+import { startJobRunner, reclaimOrphanedJobs, runnerStatus } from './jobs/runner.js';
 import { startCron } from './jobs/cron.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
@@ -37,6 +37,7 @@ app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true }));
 
 app.get('/healthz', (_req, res) => res.json({ ok: true }));
+app.get('/api/debug/runner', (_req, res) => res.json({ ...runnerStatus(), uptime: Math.floor(process.uptime()) }));
 app.use('/unsubscribe', unsubscribeRoutes);
 
 // API routes — prefixed with /api so they don't conflict with React Router paths
