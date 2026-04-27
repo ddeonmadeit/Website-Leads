@@ -221,23 +221,26 @@ export default function Helix() {
   const [leads, setLeads] = useState([]);
   const [startedAt, setStartedAt] = useState(null);
   const [now, setNow] = useState(Date.now());
+  const [toast, setToast] = useState('');
+  const [lastSubmittedAt, setLastSubmittedAt] = useState(0);
 
   // poll backend
+  const refreshAll = async () => {
+    try {
+      const [s, j, l] = await Promise.all([
+        api.stats().catch(() => null),
+        api.listScrapeJobs().catch(() => ({ rows: [] })),
+        api.listLeads({ limit: 25, sort: 'created_at', dir: 'desc' }).catch(() => ({ rows: [] })),
+      ]);
+      if (s) setStats(s);
+      setJobs(j?.rows || []);
+      setLeads(l?.rows || []);
+    } catch {/* ignore */}
+  };
+
   useEffect(() => {
-    const tick = async () => {
-      try {
-        const [s, j, l] = await Promise.all([
-          api.stats().catch(() => null),
-          api.listScrapeJobs().catch(() => ({ rows: [] })),
-          api.listLeads({ limit: 25, sort: 'created_at', dir: 'desc' }).catch(() => ({ rows: [] })),
-        ]);
-        if (s) setStats(s);
-        setJobs(j?.rows || []);
-        setLeads(l?.rows || []);
-      } catch {/* ignore */}
-    };
-    tick();
-    const id = setInterval(tick, 4000);
+    refreshAll();
+    const id = setInterval(refreshAll, 3000);
     const clk = setInterval(() => setNow(Date.now()), 1000);
     return () => { clearInterval(id); clearInterval(clk); };
   }, []);
@@ -277,17 +280,23 @@ export default function Helix() {
   const startScrape = async (e) => {
     e?.preventDefault?.();
     setErr('');
+    setToast('');
     const loc = city === CUSTOM ? customCity.trim() : city;
     if (!loc) { setErr('Location is required'); return; }
     if (!sources.length) { setErr('Pick at least one source'); return; }
     const tc = Math.max(1, Math.min(1000, Number(targetCount) || 50));
     setBusy(true);
     try {
-      await api.createScrapeJob({
+      const job = await api.createScrapeJob({
         country, niche, location: loc, sources,
         target_count: tc, schedule: null,
       });
       setStartedAt(Date.now());
+      setLastSubmittedAt(Date.now());
+      setToast(`✓ Scrape job #${job?.id || ''} queued — picking up shortly`);
+      // Refresh immediately so the user sees the queued job appear without waiting for the next poll
+      await refreshAll();
+      setTimeout(() => setToast(''), 6000);
     } catch (ex) {
       setErr(ex.message || 'Failed to start scrape');
     } finally { setBusy(false); }
@@ -313,6 +322,59 @@ export default function Helix() {
       <HelixHeader status={status} progress={progress} />
 
       <main className="max-w-6xl mx-auto px-4 md:px-6 py-4 md:py-6 space-y-4 md:space-y-6">
+        {/* Toast / status banner */}
+        {toast && (
+          <div className="rounded-lg border border-emerald-500/30 bg-emerald-500/10 px-4 py-3 text-sm text-emerald-200">
+            {toast}
+          </div>
+        )}
+
+        {/* Active job banner (queued or running) */}
+        {activeJob && (
+          <div className="rounded-xl border border-brand-500/30 bg-brand-500/5 p-4 md:p-5">
+            <div className="flex items-start gap-3 flex-wrap">
+              <div className="h-10 w-10 rounded-lg bg-brand-500/15 text-brand-400 flex items-center justify-center shrink-0">
+                <I.Search />
+              </div>
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center gap-2 flex-wrap">
+                  <StatusDot status={activeJob.status} />
+                  <span className="text-sm font-semibold text-charcoal-100 capitalize">
+                    {activeJob.status === 'queued' ? 'Queued — waiting for worker' : 'Scraping live'}
+                  </span>
+                  <span className="text-xs text-charcoal-400">
+                    · {activeJob.country} · {activeJob.niche} · {activeJob.location}
+                  </span>
+                </div>
+                <div className="mt-2 h-2 rounded-full bg-charcoal-800 overflow-hidden">
+                  <div
+                    className="h-full bg-brand-500 transition-all"
+                    style={{
+                      width: `${Math.min(100, Math.round(((activeJob.progress_current || 0) / Math.max(1, activeJob.progress_total || activeJob.target_count || 50)) * 100))}%`,
+                    }}
+                  />
+                </div>
+                <div className="mt-1.5 flex items-center justify-between text-xs text-charcoal-400">
+                  <span>{activeJob.progress_current || 0} / {activeJob.progress_total || activeJob.target_count || 50} candidates</span>
+                  <span>{activeJob.emails_found || 0} with email · {formatElapsed(elapsed)}</span>
+                </div>
+              </div>
+              <button type="button" className="btn-secondary" onClick={stopScrape}>Stop</button>
+            </div>
+          </div>
+        )}
+
+        {/* Last-job failure error */}
+        {!activeJob && jobs[0]?.status === 'failed' && jobs[0]?.error && (
+          <div className="rounded-lg border border-red-500/30 bg-red-500/10 px-4 py-3 text-sm">
+            <div className="font-semibold text-red-200">Last scrape failed</div>
+            <div className="text-red-300 mt-1 break-words font-mono text-xs">{jobs[0].error}</div>
+            <div className="text-charcoal-400 mt-2 text-xs">
+              Check Railway logs for details. Try again with a different city or fewer sources.
+            </div>
+          </div>
+        )}
+
         {/* Stats */}
         <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
           <StatCard label="Leads Found" value={(stats?.leads?.total || 0).toLocaleString()} accent="text-brand-400" />

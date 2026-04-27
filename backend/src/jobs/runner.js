@@ -39,6 +39,7 @@ async function finishJob(id, count, error = null) {
 async function executeJob(job) {
   let count = 0;
   const target = job.target_count || 50;
+  console.log(`[jobs] picking up job #${job.id} (${job.country} / ${job.niche} / ${job.location}, target=${target})`);
   try {
     // Seed progress with target so the bar shows X/target right away
     await updateProgress(job.id, 0, target, 0).catch(() => {});
@@ -51,6 +52,7 @@ async function executeJob(job) {
       onProgress: ({ current, total, emails }) =>
         updateProgress(job.id, current || 0, total || target, emails || 0).catch(() => {}),
     });
+    console.log(`[jobs] job #${job.id} produced ${results.length} leads — inserting…`);
     for (const r of results) {
       // eslint-disable-next-line no-await-in-loop
       await insertLead({
@@ -67,8 +69,9 @@ async function executeJob(job) {
       count += 1;
     }
     await finishJob(job.id, count);
+    console.log(`[jobs] job #${job.id} finished — ${count} leads saved`);
   } catch (err) {
-    console.error('[jobs] job failed', job.id, err);
+    console.error(`[jobs] job #${job.id} failed:`, err.stack || err.message);
     await finishJob(job.id, count, err.message || 'unknown_error');
   }
 }

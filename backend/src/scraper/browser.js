@@ -1,18 +1,48 @@
+import fs from 'node:fs';
 import puppeteer from 'puppeteer';
 
 let browserPromise = null;
+let resolvedExecutablePath = null;
+
+const FALLBACK_PATHS = [
+  '/usr/bin/chromium',
+  '/usr/bin/chromium-browser',
+  '/usr/bin/google-chrome',
+  '/usr/bin/google-chrome-stable',
+  '/snap/bin/chromium',
+];
 
 function getExecutablePath() {
-  return process.env.PUPPETEER_EXECUTABLE_PATH
-    || process.env.CHROMIUM_PATH
-    || (process.platform === 'linux' ? '/usr/bin/chromium' : undefined);
+  if (resolvedExecutablePath !== null) return resolvedExecutablePath || undefined;
+  const env = process.env.PUPPETEER_EXECUTABLE_PATH || process.env.CHROMIUM_PATH;
+  if (env) {
+    resolvedExecutablePath = env;
+    console.log(`[scraper] using chromium from env at ${env}`);
+    return env;
+  }
+  if (process.platform === 'linux') {
+    for (const p of FALLBACK_PATHS) {
+      try {
+        if (fs.existsSync(p)) {
+          resolvedExecutablePath = p;
+          console.log(`[scraper] using chromium at ${p}`);
+          return p;
+        }
+      } catch { /* ignore */ }
+    }
+  }
+  console.warn('[scraper] no system chromium found — falling back to puppeteer-bundled binary');
+  resolvedExecutablePath = '';
+  return undefined;
 }
 
-export function getBrowser() {
+export async function getBrowser() {
   if (!browserPromise) {
+    const executablePath = getExecutablePath();
+    console.log('[scraper] launching browser…');
     browserPromise = puppeteer.launch({
       headless: process.env.PUPPETEER_HEADLESS !== 'false',
-      executablePath: getExecutablePath(),
+      executablePath,
       args: [
         '--no-sandbox',
         '--disable-setuid-sandbox',
@@ -23,6 +53,13 @@ export function getBrowser() {
         '--mute-audio',
         `--user-agent=${process.env.SCRAPER_USER_AGENT || 'Mozilla/5.0'}`,
       ],
+    }).then((b) => {
+      console.log('[scraper] browser launched');
+      return b;
+    }).catch((err) => {
+      console.error('[scraper] browser launch failed:', err.message);
+      browserPromise = null; // allow retry on next call
+      throw err;
     });
   }
   return browserPromise;
@@ -47,8 +84,8 @@ export async function withPage(fn) {
 
 export async function closeBrowser() {
   if (browserPromise) {
-    const b = await browserPromise;
-    await b.close().catch(() => {});
+    const b = await browserPromise.catch(() => null);
+    if (b) await b.close().catch(() => {});
     browserPromise = null;
   }
 }

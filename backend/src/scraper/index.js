@@ -34,11 +34,13 @@ export async function runScrape({
     });
   };
 
+  console.log(`[scraper] start country=${country} niche="${niche}" location="${location}" target=${target} sources=${sources.join(',')}`);
+
   for (const source of sources) {
     if (collected.length >= target) break;
     const need = target - collected.length;
-    // Per-source ask grows when other sources came up short.
     const ask = Math.min(MAX_PER_SOURCE, Math.max(perSourceLimit, need * OVERSAMPLE));
+    console.log(`[scraper] running source=${source} ask=${ask} (collected=${collected.length}/${target})`);
 
     const onSourceProgress = () => reportProgress();
 
@@ -54,8 +56,10 @@ export async function runScrape({
         batch = await scrapeFacebook({ query: niche, location, limit: ask, onProgress: onSourceProgress });
       }
 
+      console.log(`[scraper] source=${source} returned ${batch.length} candidates`);
+
       for (const raw of batch) {
-        if (collected.length >= target * OVERSAMPLE) break; // hard cap on candidates
+        if (collected.length >= target * OVERSAMPLE) break;
         const k = dedupKey(raw);
         if (seen.has(k)) continue;
         seen.add(k);
@@ -63,9 +67,11 @@ export async function runScrape({
       }
       reportProgress();
     } catch (err) {
-      console.error(`[scraper] ${source} failed:`, err.message);
+      console.error(`[scraper] ${source} failed:`, err.stack || err.message);
     }
   }
+
+  console.log(`[scraper] enriching ${collected.length} candidates with website checks…`);
 
   // Enrich + classify website for each candidate
   for (const r of collected) {
@@ -90,6 +96,7 @@ export async function runScrape({
 
   // Cap to target so we don't return wildly more than asked.
   const final = filtered.slice(0, target);
+  console.log(`[scraper] done — ${final.length} leads pass the no-website filter (out of ${collected.length} candidates)`);
   onProgress?.({ current: final.length, total: target, emails: final.filter((r) => r.email).length });
   return final;
 }
