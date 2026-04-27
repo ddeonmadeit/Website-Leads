@@ -50,6 +50,7 @@ export const api = {
   createScrapeJob: (body) => req('/scrape-jobs', { method: 'POST', body }),
   cancelScrapeJob: (id) => req(`/scrape-jobs/${id}/cancel`, { method: 'POST' }),
   deleteScrapeJob: (id) => req(`/scrape-jobs/${id}`, { method: 'DELETE' }),
+  runnerStatus: () => req('/debug/runner'),
 
   listCampaigns: () => req('/campaigns'),
   getCampaign: (id) => req(`/campaigns/${id}`),

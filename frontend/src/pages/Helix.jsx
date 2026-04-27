@@ -223,18 +223,21 @@ export default function Helix() {
   const [now, setNow] = useState(Date.now());
   const [toast, setToast] = useState('');
   const [lastSubmittedAt, setLastSubmittedAt] = useState(0);
+  const [runner, setRunner] = useState(null);
 
   // poll backend
   const refreshAll = async () => {
     try {
-      const [s, j, l] = await Promise.all([
+      const [s, j, l, r] = await Promise.all([
         api.stats().catch(() => null),
         api.listScrapeJobs().catch(() => ({ rows: [] })),
         api.listLeads({ limit: 25, sort: 'created_at', dir: 'desc' }).catch(() => ({ rows: [] })),
+        api.runnerStatus().catch(() => null),
       ]);
       if (s) setStats(s);
       setJobs(j?.rows || []);
       setLeads(l?.rows || []);
+      setRunner(r);
     } catch {/* ignore */}
   };
 
@@ -364,13 +367,33 @@ export default function Helix() {
           </div>
         )}
 
-        {/* Last-job failure error */}
-        {!activeJob && jobs[0]?.status === 'failed' && jobs[0]?.error && (
+        {/* Runner-down warning */}
+        {runner && !runner.running && (
+          <div className="rounded-lg border border-amber-500/30 bg-amber-500/10 px-4 py-3 text-sm">
+            <div className="font-semibold text-amber-200">Background worker is not running</div>
+            <div className="text-amber-300/90 mt-1 text-xs">
+              Scrape jobs won't start until the worker is alive. Check Railway logs.
+            </div>
+          </div>
+        )}
+
+        {/* Last-job result banner — covers both 'failed' and 'done with 0 leads' */}
+        {!activeJob && jobs[0] && jobs[0].status === 'failed' && (
           <div className="rounded-lg border border-red-500/30 bg-red-500/10 px-4 py-3 text-sm">
             <div className="font-semibold text-red-200">Last scrape failed</div>
-            <div className="text-red-300 mt-1 break-words font-mono text-xs">{jobs[0].error}</div>
+            <div className="text-red-300 mt-1 break-words font-mono text-xs">{jobs[0].error || 'unknown_error'}</div>
             <div className="text-charcoal-400 mt-2 text-xs">
-              Check Railway logs for details. Try again with a different city or fewer sources.
+              Check Railway logs. Try a different city or fewer sources.
+            </div>
+          </div>
+        )}
+        {!activeJob && jobs[0] && jobs[0].status === 'done' && (jobs[0].results_count || 0) === 0 && (
+          <div className="rounded-lg border border-amber-500/30 bg-amber-500/10 px-4 py-3 text-sm">
+            <div className="font-semibold text-amber-200">Last scrape finished with 0 leads</div>
+            <div className="text-amber-300/90 mt-1 text-xs">
+              The sources returned nothing matching the filter (Google Maps may be blocking the
+              datacenter IP, or every result already has a working website). Try a different
+              niche/city, or add Yellow Pages / Facebook as additional sources.
             </div>
           </div>
         )}
