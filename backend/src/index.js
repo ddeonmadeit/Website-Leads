@@ -5,6 +5,7 @@ import cookieParser from 'cookie-parser';
 import helmet from 'helmet';
 import morgan from 'morgan';
 import path from 'path';
+import fs from 'fs';
 import { fileURLToPath } from 'url';
 
 import leadsRoutes from './routes/leads.js';
@@ -46,13 +47,13 @@ app.use('/api/campaigns', campaignsRoutes);
 app.use('/api/sequences', sequencesRoutes);
 app.use('/api/stats', statsRoutes);
 
-// Serve built frontend static files (JS, CSS, images)
-app.use(express.static(FRONTEND_DIST));
-
-// SPA fallback — return index.html for all non-API paths so React Router works
-app.get('*', (_req, res) => {
-  res.sendFile(path.join(FRONTEND_DIST, 'index.html'));
-});
+// Serve built frontend if dist exists (combined deploy), otherwise API-only.
+if (fs.existsSync(FRONTEND_DIST)) {
+  app.use(express.static(FRONTEND_DIST));
+  app.get('*', (_req, res) => {
+    res.sendFile(path.join(FRONTEND_DIST, 'index.html'));
+  });
+}
 
 // Error handler — must be registered last (4-arg signature)
 app.use((err, _req, res, _next) => {
