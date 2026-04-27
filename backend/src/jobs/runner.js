@@ -3,6 +3,9 @@ import { runScrape } from '../scraper/index.js';
 import { insertLead } from '../leadsModel.js';
 
 let running = false;
+let loopIteration = 0;
+
+export function runnerStatus() { return { running, loopIteration }; }
 
 async function pickNextJob() {
   const { rows } = await query(
@@ -36,51 +39,65 @@ async function finishJob(id, count, error = null) {
   );
 }
 
+const JOB_TIMEOUT_MS = 20 * 60 * 1000; // 20-minute hard limit per job
+
 async function executeJob(job) {
   let count = 0;
   const target = job.target_count || 50;
   console.log(`[jobs] picking up job #${job.id} (${job.country} / ${job.niche} / ${job.location}, target=${target})`);
-  try {
-    // Seed progress with target so the bar shows X/target right away
-    await updateProgress(job.id, 0, target, 0).catch(() => {});
-    const results = await runScrape({
-      country: job.country,
-      niche: job.niche,
-      location: job.location,
-      sources: job.sources || ['google_maps'],
-      targetCount: target,
-      onProgress: ({ current, total, emails }) =>
-        updateProgress(job.id, current || 0, total || target, emails || 0).catch(() => {}),
-    });
-    console.log(`[jobs] job #${job.id} produced ${results.length} leads — inserting…`);
-    for (const r of results) {
-      // eslint-disable-next-line no-await-in-loop
-      await insertLead({
-        business_name: r.business_name,
-        category: r.category || job.niche,
-        country: r.country || job.country,
-        city: r.city || job.location,
-        phone: r.phone,
-        email: r.email,
-        website_url: r.website_url,
-        website_status: r.website_status,
-        source: r.source,
-      }, { scrapeJobId: job.id, skipDuplicates: true });
-      count += 1;
+
+  const work = async () => {
+    try {
+      await updateProgress(job.id, 0, target, 0).catch(() => {});
+      const results = await runScrape({
+        country: job.country,
+        niche: job.niche,
+        location: job.location,
+        sources: job.sources || ['google_maps'],
+        targetCount: target,
+        onProgress: ({ current, total, emails }) =>
+          updateProgress(job.id, current || 0, total || target, emails || 0).catch(() => {}),
+      });
+      console.log(`[jobs] job #${job.id} produced ${results.length} leads — inserting…`);
+      for (const r of results) {
+        // eslint-disable-next-line no-await-in-loop
+        await insertLead({
+          business_name: r.business_name,
+          category: r.category || job.niche,
+          country: r.country || job.country,
+          city: r.city || job.location,
+          phone: r.phone,
+          email: r.email,
+          website_url: r.website_url,
+          website_status: r.website_status,
+          source: r.source,
+        }, { scrapeJobId: job.id, skipDuplicates: true });
+        count += 1;
+      }
+      await finishJob(job.id, count);
+      console.log(`[jobs] job #${job.id} finished — ${count} leads saved`);
+    } catch (err) {
+      console.error(`[jobs] job #${job.id} failed:`, err.stack || err.message);
+      await finishJob(job.id, count, err.message || 'unknown_error');
     }
-    await finishJob(job.id, count);
-    console.log(`[jobs] job #${job.id} finished — ${count} leads saved`);
-  } catch (err) {
-    console.error(`[jobs] job #${job.id} failed:`, err.stack || err.message);
-    await finishJob(job.id, count, err.message || 'unknown_error');
-  }
+  };
+
+  const timeoutPromise = new Promise((_, reject) =>
+    setTimeout(() => reject(new Error('job_timeout_20m')), JOB_TIMEOUT_MS),
+  );
+  await Promise.race([work(), timeoutPromise]).catch(async (err) => {
+    console.error(`[jobs] job #${job.id} timed out or outer error:`, err.message);
+    await finishJob(job.id, count, err.message || 'timeout').catch(() => {});
+  });
 }
 
 export async function startJobRunner() {
   if (running) return;
   running = true;
+  console.log('[jobs] runner starting…');
   const loop = async () => {
     while (running) {
+      loopIteration += 1;
       try {
         const job = await pickNextJob();
         if (!job) {
