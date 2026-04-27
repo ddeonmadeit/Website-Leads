@@ -62,12 +62,12 @@ app.use((err, _req, res, _next) => {
   res.status(err.status || 500).json({ error: err.message || 'internal_error' });
 });
 
-app.listen(PORT, async () => {
+app.listen(PORT, () => {
   console.log(`[api] listening on ${PORT}`);
-  // Reclaim any scrape job left in 'running' by a previous container so it
-  // resumes instead of being orphaned. Campaigns naturally resume because the
-  // email loop already picks up rows still marked 'sending'.
-  await reclaimOrphanedJobs().catch((e) => console.error('[jobs] reclaim failed', e));
+  // Start runner FIRST and synchronously — sets running=true immediately so
+  // a slow reclaim or DB blip can't leave the worker dead.
   startJobRunner().catch((e) => console.error('[jobs] runner failed', e));
+  // Reclaim orphaned jobs in the background so it can't block startup.
+  reclaimOrphanedJobs().catch((e) => console.error('[jobs] reclaim failed', e));
   startCron();
 });
