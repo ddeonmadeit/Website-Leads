@@ -37,7 +37,8 @@ app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true }));
 
 app.get('/healthz', (_req, res) => res.json({ ok: true }));
-app.get('/api/debug/runner', (_req, res) => res.json({ ...runnerStatus(), uptime: Math.floor(process.uptime()) }));
+const BOOT_TIME = new Date().toISOString();
+app.get('/api/debug/runner', (_req, res) => res.json({ ...runnerStatus(), uptime: Math.floor(process.uptime()), bootTime: BOOT_TIME }));
 app.use('/unsubscribe', unsubscribeRoutes);
 
 // API routes — prefixed with /api so they don't conflict with React Router paths
@@ -61,12 +62,14 @@ app.use((err, _req, res, _next) => {
   res.status(err.status || 500).json({ error: err.message || 'internal_error' });
 });
 
+// Start background workers at module load time — not inside app.listen
+// callback, which can silently fail to execute on Railway if the TCP
+// bind is slow or the callback throws before reaching these lines.
+console.log('[startup] launching job runner and cron…');
+startJobRunner().catch((e) => console.error('[jobs] runner failed at startup', e));
+reclaimOrphanedJobs().catch((e) => console.error('[jobs] reclaim failed at startup', e));
+startCron();
+
 app.listen(PORT, () => {
   console.log(`[api] listening on ${PORT}`);
-  // Start runner FIRST and synchronously — sets running=true immediately so
-  // a slow reclaim or DB blip can't leave the worker dead.
-  startJobRunner().catch((e) => console.error('[jobs] runner failed', e));
-  // Reclaim orphaned jobs in the background so it can't block startup.
-  reclaimOrphanedJobs().catch((e) => console.error('[jobs] reclaim failed', e));
-  startCron();
 });
