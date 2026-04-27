@@ -22,10 +22,7 @@ aptPkgs = [
 ]
 
 [phases.build]
-cmds = [
-  "cd ../frontend && npm install && npm run build",
-  "npm install --omit=dev"
-]
+cmds = ["npm install --omit=dev"]
 
 [start]
 cmd = "node src/migrate.js && node src/index.js"
