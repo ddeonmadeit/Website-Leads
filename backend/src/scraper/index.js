@@ -3,6 +3,7 @@ import { scrapeGoogleMaps } from './googleMaps.js';
 import { scrapeYellowPages } from './yellowPages.js';
 import { scrapeFacebook } from './facebook.js';
 import { scrapeOpenStreetMap } from './openStreetMap.js';
+import { scrapeGoogleMapsViaSerpApi, isSerpApiConfigured } from './serpApiGoogleMaps.js';
 import { classifyUrl, headCheck } from './websiteCheck.js';
 
 export { PRESETS };
@@ -52,7 +53,16 @@ export async function runScrape({
           niche, location, country: preset.country, limit: ask, onProgress: onSourceProgress,
         });
       } else if (source === 'google_maps') {
-        batch = await scrapeGoogleMaps({ query: `${niche} in ${location}`, limit: ask, onProgress: onSourceProgress });
+        if (isSerpApiConfigured()) {
+          batch = await scrapeGoogleMapsViaSerpApi({
+            niche, location, country: preset.country, limit: ask, onProgress: onSourceProgress,
+          });
+        } else {
+          // No API key — Puppeteer fallback. Will likely fail on Railway/AWS
+          // datacenter IPs, but we try. The job error message will surface the
+          // actual failure so the user can install SERPAPI_KEY.
+          batch = await scrapeGoogleMaps({ query: `${niche} in ${location}`, limit: ask, onProgress: onSourceProgress });
+        }
       } else if (source === 'yellow_pages') {
         if (!preset.yellowPagesHost) {
           console.warn(`[scraper] no yellowPagesHost configured for ${country} — skipping`);

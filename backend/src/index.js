@@ -44,7 +44,12 @@ app.get('/api/debug/runner', (_req, res) => {
   // Self-heal: if the runner is somehow not alive when this is hit, kick it.
   // Idempotent — startJobRunner() returns early if running===true.
   if (!status.running) startJobRunner().catch(() => {});
-  res.json({ ...status, uptime: Math.floor(process.uptime()), bootTime: BOOT_TIME });
+  res.json({
+    ...status,
+    uptime: Math.floor(process.uptime()),
+    bootTime: BOOT_TIME,
+    serpApiConfigured: Boolean(process.env.SERPAPI_KEY),
+  });
 });
 app.use('/unsubscribe', unsubscribeRoutes);
 
