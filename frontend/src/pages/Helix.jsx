@@ -74,9 +74,10 @@ const CUSTOM = '__custom__';
 const COUNTRIES = Object.keys(PRESETS);
 
 const SOURCES = [
-  { id: 'google_maps', label: 'Google Maps' },
+  { id: 'openstreetmap', label: 'OpenStreetMap', recommended: true },
   { id: 'yellow_pages', label: 'Yellow Pages' },
-  { id: 'facebook', label: 'Facebook' },
+  { id: 'google_maps', label: 'Google Maps (often blocked)' },
+  { id: 'facebook', label: 'Facebook (often blocked)' },
 ];
 
 function formatElapsed(s) {
@@ -212,7 +213,7 @@ export default function Helix() {
   const [city, setCity] = useState(PRESETS[COUNTRIES[0]].cities[0]);
   const [customCity, setCustomCity] = useState('');
   const [targetCount, setTargetCount] = useState(50);
-  const [sources, setSources] = useState(['google_maps', 'yellow_pages']);
+  const [sources, setSources] = useState(['openstreetmap', 'yellow_pages']);
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState('');
 
@@ -367,12 +368,17 @@ export default function Helix() {
           </div>
         )}
 
-        {/* Runner-down warning */}
-        {runner && !runner.running && (
+        {/* Runner-down warning — only when we got a real JSON response that
+            explicitly says running:false. Avoids false-positive when the
+            endpoint is missing (server returns the SPA HTML). */}
+        {runner && typeof runner === 'object' && runner.running === false && (
           <div className="rounded-lg border border-amber-500/30 bg-amber-500/10 px-4 py-3 text-sm">
             <div className="font-semibold text-amber-200">Background worker is not running</div>
             <div className="text-amber-300/90 mt-1 text-xs">
               Scrape jobs won't start until the worker is alive. Check Railway logs.
+              {runner.bootTime && (
+                <span className="block mt-1 text-charcoal-500 font-mono">boot: {runner.bootTime}</span>
+              )}
             </div>
           </div>
         )}

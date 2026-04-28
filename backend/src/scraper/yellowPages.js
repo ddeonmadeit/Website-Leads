@@ -45,8 +45,9 @@ export async function scrapeYellowPages({ host, query, location, limit = 30, onP
     if (entry.url) {
       detailHtml = await fetchHtml(entry.url) || '';
     }
-    const combined = `${html.substring(0, 0)}\n${detailHtml}`;
-    const emails = extractEmails(`${entry.raw || ''}\n${combined}`);
+    // Pull emails from the listing snippet AND the detail page, but not the
+    // entire search-page HTML (that gives wrong domain-wide false positives).
+    const emails = extractEmails(`${entry.raw || ''}\n${detailHtml}`);
     results.push({
       business_name: entry.name,
       category: entry.category || query,

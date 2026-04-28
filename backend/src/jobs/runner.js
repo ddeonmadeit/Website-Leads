@@ -59,9 +59,10 @@ async function executeJob(job) {
           updateProgress(job.id, current || 0, total || target, emails || 0).catch(() => {}),
       });
       console.log(`[jobs] job #${job.id} produced ${results.length} leads — inserting…`);
+      let skipped = 0;
       for (const r of results) {
         // eslint-disable-next-line no-await-in-loop
-        await insertLead({
+        const inserted = await insertLead({
           business_name: r.business_name,
           category: r.category || job.niche,
           country: r.country || job.country,
@@ -72,10 +73,11 @@ async function executeJob(job) {
           website_status: r.website_status,
           source: r.source,
         }, { scrapeJobId: job.id, skipDuplicates: true });
-        count += 1;
+        if (inserted?.skipped) skipped += 1;
+        else count += 1;
       }
       await finishJob(job.id, count);
-      console.log(`[jobs] job #${job.id} finished — ${count} leads saved`);
+      console.log(`[jobs] job #${job.id} finished — ${count} leads saved, ${skipped} duplicates skipped`);
     } catch (err) {
       console.error(`[jobs] job #${job.id} failed:`, err.stack || err.message);
       await finishJob(job.id, count, err.message || 'unknown_error');
