@@ -383,6 +383,26 @@ export default function Helix() {
           </div>
         )}
 
+        {/* SerpAPI hint — surface when the user picks Google Maps but the key
+            isn't configured. Without the key, Puppeteer is the only option and
+            Google blocks Railway's IP range outright. */}
+        {runner && runner.serpApiConfigured === false && sources.includes('google_maps') && (
+          <div className="rounded-lg border border-sky-500/30 bg-sky-500/10 px-4 py-3 text-sm">
+            <div className="font-semibold text-sky-200">Google Maps needs SerpAPI on Railway</div>
+            <div className="text-sky-300/90 mt-1 text-xs leading-relaxed">
+              Google blocks scraping from datacenter IPs (Railway, AWS, GCP) — there is no way around this without
+              a residential proxy or a paid Google Maps API. The cheapest fix:
+              <ol className="list-decimal list-inside mt-1.5 space-y-0.5">
+                <li>Sign up at <a className="underline" href="https://serpapi.com" target="_blank" rel="noreferrer">serpapi.com</a> (free tier: 250 searches/month)</li>
+                <li>Copy your API key from the dashboard</li>
+                <li>In Railway → backend service → Variables, add <code className="font-mono px-1 rounded bg-sky-500/20">SERPAPI_KEY</code> with your key as the value</li>
+                <li>Railway redeploys automatically; Google Maps starts working immediately</li>
+              </ol>
+              For now, your scrape will use OpenStreetMap (free, no key needed, but limited contact info).
+            </div>
+          </div>
+        )}
+
         {/* Last-job result banner — covers both 'failed' and 'done with 0 leads' */}
         {!activeJob && jobs[0] && jobs[0].status === 'failed' && (
           <div className="rounded-lg border border-red-500/30 bg-red-500/10 px-4 py-3 text-sm">

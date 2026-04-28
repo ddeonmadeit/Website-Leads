@@ -84,49 +84,58 @@ function tagsForNiche(niche) {
   return [['office', 'company']];
 }
 
+// Map our short country labels to OSM canonical names (admin_level=2).
+const COUNTRY_OSM_NAMES = {
+  UAE: 'United Arab Emirates',
+  Philippines: 'Philippines',
+  India: 'India',
+  'South Africa': 'South Africa',
+};
+
+function osmCountryName(country) {
+  return COUNTRY_OSM_NAMES[country] || country;
+}
+
 function buildOverpassQuery({ niche, location, country }) {
   const tags = tagsForNiche(niche);
-  // Build alternative tag filters — a place matches if ANY tag combination matches
+  // Use admin areas only (admin_level 4..10) so we don't accidentally match
+  // a building or shop named the same as the city. The country boundary
+  // restricts the city lookup so e.g. "Dubai" matches the UAE city, not the
+  // Brazilian building of the same name.
   const filters = tags.flatMap(([k, v]) => [
-    `node["${k}"="${v}"](area.searchArea);`,
-    `way["${k}"="${v}"](area.searchArea);`,
-    `relation["${k}"="${v}"](area.searchArea);`,
+    `node["${k}"="${v}"](area.cityArea);`,
+    `way["${k}"="${v}"](area.cityArea);`,
   ]).join('\n  ');
-
-  // Try a city-level area first; if Overpass can't find it, the query simply
-  // returns no elements, and we fall back to country-level on retry.
-  // We escape quotes in the location name for safety.
-  const safeLocation = String(location || '').replace(/"/g, '\\"');
-  const safeCountry = String(country || '').replace(/"/g, '\\"');
+  const safeLocation = String(location || '').split(/[(]/, 1)[0].trim().replace(/"/g, '\\"');
+  const safeCountry = osmCountryName(country).replace(/"/g, '\\"');
   return `
 [out:json][timeout:60];
+area["name"="${safeCountry}"]["admin_level"="2"]->.country;
 (
-  area["name"="${safeLocation}"]["place"~"city|town|suburb|district|municipality"];
-  area["name:en"="${safeLocation}"]["place"~"city|town|suburb|district|municipality"];
-  area["name"="${safeLocation}"];
+  area(area.country)["name"="${safeLocation}"]["admin_level"~"4|5|6|7|8|9|10"];
+  area(area.country)["name:en"="${safeLocation}"]["admin_level"~"4|5|6|7|8|9|10"];
 )->.cityArea;
-area["name"="${safeCountry}"]["admin_level"="2"]->.countryArea;
 (
-  ${filters.replace(/area\.searchArea/g, 'area.cityArea')}
+  ${filters}
 );
-out tags center 200;
+out tags center 300;
 `.trim();
 }
 
 function buildOverpassQueryCountryOnly({ niche, country }) {
   const tags = tagsForNiche(niche);
   const filters = tags.flatMap(([k, v]) => [
-    `node["${k}"="${v}"](area.countryArea);`,
-    `way["${k}"="${v}"](area.countryArea);`,
+    `node["${k}"="${v}"](area.country);`,
+    `way["${k}"="${v}"](area.country);`,
   ]).join('\n  ');
-  const safeCountry = String(country || '').replace(/"/g, '\\"');
+  const safeCountry = osmCountryName(country).replace(/"/g, '\\"');
   return `
 [out:json][timeout:60];
-area["name"="${safeCountry}"]["admin_level"="2"]->.countryArea;
+area["name"="${safeCountry}"]["admin_level"="2"]->.country;
 (
   ${filters}
 );
-out tags center 200;
+out tags center 500;
 `.trim();
 }
 
