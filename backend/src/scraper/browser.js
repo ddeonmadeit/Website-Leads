@@ -51,7 +51,7 @@ export async function getBrowser() {
         '--no-first-run',
         '--hide-scrollbars',
         '--mute-audio',
-        `--user-agent=${process.env.SCRAPER_USER_AGENT || 'Mozilla/5.0'}`,
+        `--user-agent=${process.env.SCRAPER_USER_AGENT || 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36'}`,
       ],
     });
     const timeoutPromise = new Promise((_, reject) =>

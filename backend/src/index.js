@@ -39,7 +39,13 @@ app.use(express.urlencoded({ extended: true }));
 
 app.get('/healthz', (_req, res) => res.json({ ok: true }));
 const BOOT_TIME = new Date().toISOString();
-app.get('/api/debug/runner', (_req, res) => res.json({ ...runnerStatus(), uptime: Math.floor(process.uptime()), bootTime: BOOT_TIME }));
+app.get('/api/debug/runner', (_req, res) => {
+  const status = runnerStatus();
+  // Self-heal: if the runner is somehow not alive when this is hit, kick it.
+  // Idempotent — startJobRunner() returns early if running===true.
+  if (!status.running) startJobRunner().catch(() => {});
+  res.json({ ...status, uptime: Math.floor(process.uptime()), bootTime: BOOT_TIME });
+});
 app.use('/unsubscribe', unsubscribeRoutes);
 
 // API routes — prefixed with /api so they don't conflict with React Router paths

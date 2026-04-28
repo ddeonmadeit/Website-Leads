@@ -69,6 +69,7 @@ export const PRESETS = {
       { name: 'Luxury Clinics / Car Rentals / Concierge', tier: 1 },
       { name: 'B2B Logistics / Trade / Consulting', tier: 1 },
     ],
+    yellowPagesHost: 'yellowpages.ae',
   },
 };
 
